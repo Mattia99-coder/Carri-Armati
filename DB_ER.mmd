@@ -1,0 +1,60 @@
+erDiagram
+    USERS {
+        bigint id PK
+        string username
+        string password
+    }
+
+    TOKENS {
+        string token PK
+        bigint user_id FK
+        timestamp expiration
+    }
+
+    TANKS {
+        string model PK
+        int speed
+        int hit_points
+        int price
+        string image_url
+    }
+
+    WEAPONS {
+        string model PK
+        int damage
+        int range
+        int fire_rate
+        int price
+        string image_url
+    }
+
+    OWNEDTANKS {
+        bigint user_id PK, FK
+        string tank_model PK, FK
+    }
+
+    OWNEDWEAPONS {
+        bigint user_id PK, FK
+        string weapon_model PK, FK
+    }
+
+    USEREQUIPMENT {
+        bigint user_id PK, FK
+        string tank_model FK
+        string first_weapon FK
+        string second_weapon FK
+        string third_weapon FK
+    }
+
+    USERS ||--o{ TOKENS : has
+    USERS ||--o{ OWNEDTANKS : owns
+    USERS ||--o{ OWNEDWEAPONS : owns
+    USERS ||--|| USEREQUIPMENT : equips
+
+    TANKS ||--o{ OWNEDTANKS : is_owned_by
+    TANKS ||--|| USEREQUIPMENT : equipped_as
+
+    WEAPONS ||--o{ OWNEDWEAPONS : is_owned_by
+    WEAPONS ||--|| USEREQUIPMENT : first
+    WEAPONS ||--|| USEREQUIPMENT : second
+    WEAPONS ||--|| USEREQUIPMENT : third
