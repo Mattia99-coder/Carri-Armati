@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Tank Game - Lobby</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      background: linear-gradient(135deg, #2c3e50, #34495e); 
+      color: white; 
+      min-height: 100vh;
+    }
+    .header {
+      background: rgba(0,0,0,0.3);
+      padding: 20px;
+      text-align: center;
+      border-bottom: 2px solid #3498db;
+    }
+    .user-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .nav-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+    .nav-btn {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    .nav-btn:hover { background: #2980b9; }
+    .nav-btn.special { background: #e74c3c; }
+    .nav-btn.special:hover { background: #c0392b; }
+    .game-mode-selector {
+      background: rgba(0,0,0,0.3);
+      margin: 20px;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .mode-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    .mode-btn {
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s;
+    }
+    .mode-btn:hover { background: #229954; transform: scale(1.05); }
+    .mode-btn.active { background: #e67e22; }
+    .maps-container, .multiplayer-container {
+      display: none;
+      background: rgba(0,0,0,0.2);
+      margin: 20px;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .slot { 
+      display: inline-block; 
+      margin: 10px; 
+      cursor: pointer; 
+      text-align: center;
+      background: rgba(255,255,255,0.1);
+      padding: 10px;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+    .slot:hover { transform: scale(1.05); background: rgba(255,255,255,0.2); }
+    .slot.selected { outline: 3px solid #f39c12; background: rgba(243,156,18,0.3); }
+    .slot img { width: 100px; height: 100px; image-rendering: pixelated; border-radius: 5px; }
+    .match-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin: 20px 0;
+    }
+    .match-item {
+      background: rgba(0,0,0,0.3);
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .user-stats {
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    #genBtn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      margin: 20px;
+      transition: all 0.3s;
+    }
+    #genBtn:hover { background: #c0392b; transform: scale(1.05); }
+    #genBtn:disabled { background: #7f8c8d; cursor: not-allowed; transform: none; }
+    .invites-panel {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.8);
+      padding: 15px;
+      border-radius: 8px;
+      max-width: 300px;
+      display: none;
+    }
+    .invite-item {
+      background: rgba(255,255,255,0.1);
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="user-info">
+      <div id="user-welcome">Benvenuto!</div>
+      <div id="user-stats-summary">Caricamento...</div>
+      <button onclick="logout()" class="nav-btn">Logout</button>
+    </div>
+    <h1>🎮 Tank Game - Lobby</h1>
+    
+    <div class="nav-buttons">
+      <button onclick="window.location.href='/leaderboard/index.html'" class="nav-btn special">🏆 Classifica</button>
+      <button onclick="window.location.href='/shop/html/Negozio.html'" class="nav-btn special">🛒 Negozio</button>
+      <button onclick="showMapCreator()" class="nav-btn">🗺️ Crea Mappa</button>
+      <button onclick="loadUserMaps()" class="nav-btn">📁 Le Mie Mappe</button>
+      <button onclick="toggleInvites()" class="nav-btn" id="invites-btn">📨 Inviti (0)</button>
+    </div>
+  </div>
+
+  <div class="game-mode-selector">
+    <h2>Seleziona Modalità di Gioco</h2>
+    <div class="mode-buttons">
+      <button class="mode-btn active" onclick="showSinglePlayer()">🎯 Single Player</button>
+      <button class="mode-btn" onclick="showMultiplayer()">👥 Multiplayer</button>
+      <button class="mode-btn" onclick="showLocalCoop()">🎮 Local Co-op</button>
+    </div>
+  </div>
+
+  <!-- Single Player Mode -->
+  <div id="singleplayer-container" class="maps-container" style="display: block;">
+    <h2>Seleziona una mappa</h2>
+    <div id="slots"></div>
+    
+    <div id="tank-section" style="display: none;">
+      <h2>Seleziona un carro armato</h2>
+      <div id="tank-slots"></div>
+    </div>
+    
+    <div style="text-align: center;">
+      <button id="genBtn" disabled>🚀 Inizia Partita</button>
+    </div>
+  </div>
+
+  <!-- Multiplayer Mode -->
+  <div id="multiplayer-container" class="multiplayer-container">
+    <div style="display: flex; gap: 20px;">
+      <div style="flex: 1;">
+        <h3>Crea Nuova Partita</h3>
+        <div>
+          <label>Max Giocatori: </label>
+          <select id="max-players">
+            <option value="2">2 Giocatori</option>
+            <option value="3">3 Giocatori</option>
+            <option value="4">4 Giocatori</option>
+          </select>
+        </div>
+        <div style="margin: 10px 0;">
+          <div id="mp-map-selection"></div>
+          <div id="mp-tank-selection" style="display: none;"></div>
+        </div>
+        <button onclick="createMatch()" id="create-match-btn" disabled>Crea Partita</button>
+      </div>
+      
+      <div style="flex: 1;">
+        <h3>Partite Disponibili</h3>
+        <div id="available-matches" class="match-list">
+          <div style="text-align: center; padding: 20px;">Caricamento...</div>
+        </div>
+        <button onclick="refreshMatches()">� Aggiorna</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Local Co-op Mode -->
+  <div id="localcoop-container" class="multiplayer-container" style="display: none;">
+    <div class="user-stats">
+      <h3>🎮 Multiplayer Cooperativo Locale</h3>
+      <p>Gioca con i tuoi amici sullo stesso computer! Fino a 4 giocatori, 2 carri armati.</p>
+    </div>
+    
+    <div style="display: flex; gap: 20px;">
+      <!-- Setup partita -->
+      <div style="flex: 1;">
+        <h3>⚙️ Configurazione Partita</h3>
+        
+        <div style="margin: 15px 0;">
+          <label>Mappa:</label>
+          <div id="coop-map-selection"></div>
+        </div>
+        
+        <div style="margin: 15px 0;">
+          <label>Numero giocatori:</label>
+          <select id="coop-max-players">
+            <option value="2">2 Giocatori (1 Tank)</option>
+            <option value="3">3 Giocatori (2 Tank)</option>
+            <option value="4" selected>4 Giocatori (2 Tank)</option>
+          </select>
+        </div>
+        
+        <div style="margin: 15px 0;">
+          <label>Modalità:</label>
+          <select id="coop-game-mode">
+            <option value="local_coop">Cooperativo (stesso team)</option>
+            <option value="team_vs_team">Team vs Team</option>
+          </select>
+        </div>
+        
+        <button onclick="createLocalMatch()" id="create-local-btn" class="mode-btn">🚀 Crea Partita Locale</button>
+        
+        <div id="local-match-created" style="display: none; margin-top: 20px; padding: 15px; background: rgba(46, 204, 113, 0.2); border-radius: 8px;">
+          <h4>✅ Partita Locale Creata!</h4>
+          <p>ID Partita: <span id="local-match-id"></span></p>
+          <p>Altri giocatori possono unirsi con questo ID.</p>
+        </div>
+      </div>
+      
+      <!-- Join partita o configurazione giocatori -->
+      <div style="flex: 1;">
+        <div id="local-join-section">
+          <h3>🔗 Unisciti a Partita</h3>
+          <div style="margin: 15px 0;">
+            <label>ID Partita:</label>
+            <input type="text" id="local-match-id-input" placeholder="Inserisci ID partita" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+          </div>
+          <button onclick="joinLocalMatch()" class="nav-btn">Unisciti</button>
+        </div>
+        
+        <div id="local-players-section" style="display: none;">
+          <h3>👥 Giocatori nella Partita</h3>
+          <div id="local-players-list">
+            <!-- Lista giocatori verrà popolata dinamicamente -->
+          </div>
+          
+          <div style="margin-top: 15px;">
+            <button onclick="startLocalGame()" id="start-local-btn" class="mode-btn" disabled>🎮 Avvia Gioco</button>
+            <button onclick="refreshLocalMatch()" class="nav-btn">🔄 Aggiorna</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Configurazione dettagliata ruoli -->
+    <div id="roles-configuration" style="display: none; margin-top: 20px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+      <h3>🎛️ Configurazione Ruoli e Controlli</h3>
+      
+      <div style="display: flex; gap: 20px;">
+        <div style="flex: 1;">
+          <h4>🚗 Tank 1</h4>
+          <div id="tank1-players">
+            <div class="player-role">
+              <label>Driver:</label>
+              <select id="tank1-driver">
+                <option value="">Nessuno</option>
+              </select>
+              <select id="tank1-driver-controls">
+                <option value="1">WASD</option>
+                <option value="2">Frecce</option>
+                <option value="3">IJKL</option>
+              </select>
+            </div>
+            <div class="player-role">
+              <label>Gunner:</label>
+              <select id="tank1-gunner">
+                <option value="">Nessuno</option>
+              </select>
+              <select id="tank1-gunner-controls">
+                <option value="2">Frecce + Enter</option>
+                <option value="4">Numpad</option>
+                <option value="1">WASD + Space</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div style="flex: 1;" id="tank2-section">
+          <h4>🚗 Tank 2</h4>
+          <div id="tank2-players">
+            <div class="player-role">
+              <label>Driver:</label>
+              <select id="tank2-driver">
+                <option value="">Nessuno</option>
+              </select>
+              <select id="tank2-driver-controls">
+                <option value="3">IJKL</option>
+                <option value="1">WASD</option>
+                <option value="2">Frecce</option>
+              </select>
+            </div>
+            <div class="player-role">
+              <label>Gunner:</label>
+              <select id="tank2-gunner">
+                <option value="">Nessuno</option>
+              </select>
+              <select id="tank2-gunner-controls">
+                <option value="4">Numpad</option>
+                <option value="2">Frecce + Enter</option>
+                <option value="3">IJKL + M</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 15px;">
+        <button onclick="saveRolesConfiguration()" class="nav-btn">💾 Salva Configurazione</button>
+      </div>
+      
+      <!-- Schema controlli -->
+      <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.1); border-radius: 8px;">
+        <h4>🎮 Schema Controlli</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 12px;">
+          <div>
+            <strong>WASD + Space:</strong> W↑ A← S↓ D→ Spazio=Spara
+          </div>
+          <div>
+            <strong>Frecce + Enter:</strong> ↑← ↓→ Enter=Spara
+          </div>
+          <div>
+            <strong>IJKL + M:</strong> I↑ J← K↓ L→ M=Spara
+          </div>
+          <div>
+            <strong>Numpad + 0:</strong> 8↑ 4← 5↓ 6→ 0=Spara
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invites Panel -->
+  <div id="invites-panel" class="invites-panel">
+    <h4>📨 Inviti Ricevuti</h4>
+    <div id="invites-list">Nessun invito</div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <button id="genBtn" disabled>Genera mappa</button>
+  <script>
+    console.log('→ Lobby avviata');
+    let selectedMapId = null;
+    let selectedTankId = null;
+    let selectedMpMapId = null;
+    let selectedMpTankId = null;
+    let selectedCoopMapId = null;
+    let currentMode = 'singleplayer';
+    let currentLocalMatchId = null;
+    let localMatchData = null;
+    
+    const token = localStorage.getItem('userToken');
+    
+    // Inizializzazione
+    $(document).ready(function() {
+      if (!token) {
+        alert('Devi effettuare il login!');
+        window.location.href = '/index.html';
+        return;
+      }
+      
+      loadUserInfo();
+      loadUserStats();
+      loadMaps();
+      loadInvites();
+      setInterval(loadInvites, 30000); // Aggiorna inviti ogni 30 secondi
+    });
+    
+    // Carica informazioni utente
+    function loadUserInfo() {
+      fetch(`/user/src/whois.php?token=${token}`)
+        .then(r => r.json())
+        .then(username => {
+          $('#user-welcome').text(`Benvenuto, ${username}!`);
+        })
+        .catch(e => console.error('Errore caricamento utente:', e));
+    }
+    
+    // Carica statistiche utente
+    function loadUserStats() {
+      fetch(`/user/src/records.php/records/user?token=${token}`)
+        .then(r => r.json())
+        .then(data => {
+          const stats = data.stats;
+          $('#user-stats-summary').html(`
+            Livello ${stats.level} | ${stats.total_points} punti | ${stats.matches_played} partite
+          `);
+        })
+        .catch(e => console.error('Errore caricamento stats:', e));
+    }
+    
+    // Modalità di gioco
+    function showSinglePlayer() {
+      currentMode = 'singleplayer';
+      $('.mode-btn').removeClass('active');
+      $('[onclick="showSinglePlayer()"]').addClass('active');
+      $('#singleplayer-container').show();
+      $('#multiplayer-container').hide();
+      $('#localcoop-container').hide();
+    }
+    
+    function showMultiplayer() {
+      currentMode = 'multiplayer';
+      $('.mode-btn').removeClass('active');
+      $('[onclick="showMultiplayer()"]').addClass('active');
+      $('#singleplayer-container').hide();
+      $('#multiplayer-container').show();
+      $('#localcoop-container').hide();
+      loadMultiplayerMaps();
+      refreshMatches();
+    }
+    
+    function showLocalCoop() {
+      currentMode = 'localcoop';
+      $('.mode-btn').removeClass('active');
+      $('[onclick="showLocalCoop()"]').addClass('active');
+      $('#singleplayer-container').hide();
+      $('#multiplayer-container').hide();
+      $('#localcoop-container').show();
+      loadCoopMaps();
+    }
+    
+    // Carica mappe per single player
+    function loadMaps() {
+      fetch('/maps/api.php?endpoint=maps/slots', { mode: 'cors' })
+        .then(r => r.json())
+        .then(data => {
+          console.log('Mappe caricate:', data);
+          const container = $('#slots');
+          container.empty();
+          
+          if (!Array.isArray(data)) {
+            console.error('Formato dati mappe non valido:', data);
+            container.html('<p>Errore nel caricamento delle mappe</p>');
+            return;
+          }
+          
+          data.forEach(slot => {
+            const div = $(`
+              <div class="slot" data-id="${slot.id}">
+                <img src="/maps${slot.cover_path}" alt="${slot.name}" onerror="this.src='/images/deserto.jpg'">
+                <p>${slot.name}</p>
+              </div>
+            `);
+            
+            div.click(() => selectMap(slot.id, div));
+            container.append(div);
+          });
+        })
+        .catch(err => {
+          console.error('Errore caricamento mappe:', err);
+          $('#slots').html('<p>Errore di connessione al server</p>');
+        });
+    }
+    
+    // Carica mappe per multiplayer
+    function loadMultiplayerMaps() {
+      fetch('/maps/api.php?endpoint=maps/slots')
+        .then(r => r.json())
+        .then(data => {
+          console.log('Mappe MP caricate:', data);
+          const container = $('#mp-map-selection');
+          container.html('<h4>Seleziona Mappa:</h4>');
+          
+          if (!Array.isArray(data)) {
+            console.error('Formato dati mappe MP non valido:', data);
+            container.append('<p>Errore nel caricamento delle mappe</p>');
+            return;
+          }
+          
+          data.forEach(slot => {
+            const div = $(`
+              <div class="slot" data-id="${slot.id}">
+                <img src="/maps${slot.cover_path}" alt="${slot.name}" onerror="this.src='/images/deserto.jpg'">
+                <p>${slot.name}</p>
+              </div>
+            `);
+            
+            div.click(() => selectMpMap(slot.id, div));
+            container.append(div);
+          });
+        })
+        .catch(err => {
+          console.error('Errore caricamento mappe MP:', err);
+          $('#mp-map-selection').html('<h4>Seleziona Mappa:</h4><p>Errore di connessione</p>');
+        });
+    }
+    
+    // Selezione mappa single player
+    function selectMap(mapId, element) {
+      $('.slot').removeClass('selected');
+      element.addClass('selected');
+      selectedMapId = mapId;
+      $('#genBtn').prop('disabled', true);
+      selectedTankId = null;
+      $('#tank-section').show();
+      loadTanks();
+    }
+    
+    // Selezione mappa multiplayer
+    function selectMpMap(mapId, element) {
+      $('#mp-map-selection .slot').removeClass('selected');
+      element.addClass('selected');
+      selectedMpMapId = mapId;
+      $('#mp-tank-selection').show();
+      loadMpTanks();
+    }
+    
+    // Carica tank per single player
+    function loadTanks() {
+      // Verifica se abbiamo un token per caricare solo i tank posseduti
+      const userToken = localStorage.getItem('userToken');
+      const endpoint = userToken ? 
+        `/maps/api.php?endpoint=tanks/owned&token=${encodeURIComponent(userToken)}` :
+        '/maps/api.php?endpoint=tanks/slots'; // Fallback a tutti i tank se non autenticato
+        
+      fetch(endpoint)
+        .then(r => r.json())
+        .then(tanks => {
+          console.log('Tank caricati:', tanks);
+          const container = $('#tank-slots');
+          container.empty();
+          
+          if (!Array.isArray(tanks)) {
+            console.error('Formato dati tank non valido:', tanks);
+            container.html('<p>Errore nel caricamento dei tank</p>');
+            return;
+          }
+          
+          if (tanks.length === 0) {
+            container.html('<p>⚠️ Non possiedi alcun tank! Vai al negozio per acquistarne uno.</p>');
+            return;
+          }
+          
+          tanks.forEach(tank => {
+            const div = $(`
+              <div class="slot" data-id="${tank.id}">
+                <img src="/maps${tank.cover_path}" alt="${tank.name}" onerror="this.src='/images/carro_armato_1.png'">
+                <p>${tank.name}</p>
+                <button class="btn-small btn-secondary" onclick="event.stopPropagation(); customizeTank(${tank.id})" style="margin-top: 5px; padding: 5px 10px; font-size: 12px;">⚔️ Personalizza</button>
+              </div>
+            `);
+            
+            div.click(() => selectTank(tank.id, div));
+            container.append(div);
+          });
+        })
+        .catch(err => {
+          console.error('Errore caricamento tank:', err);
+          $('#tank-slots').html('<p>Errore di connessione al server</p>');
+        });
+    }
+    
+    // Carica tank per multiplayer
+    function loadMpTanks() {
+      // Verifica se abbiamo un token per caricare solo i tank posseduti
+      const userToken = localStorage.getItem('userToken');
+      const endpoint = userToken ? 
+        `/maps/api.php?endpoint=tanks/owned&token=${encodeURIComponent(userToken)}` :
+        '/maps/api.php?endpoint=tanks/slots'; // Fallback a tutti i tank se non autenticato
+        
+      fetch(endpoint)
+        .then(r => r.json())
+        .then(tanks => {
+          console.log('Tank MP caricati:', tanks);
+          const container = $('#mp-tank-selection');
+          container.html('<h4>Seleziona Tank:</h4>');
+          
+          if (!Array.isArray(tanks)) {
+            console.error('Formato dati tank MP non valido:', tanks);
+            container.append('<p>Errore nel caricamento dei tank</p>');
+            return;
+          }
+          
+          if (tanks.length === 0) {
+            container.append('<p>⚠️ Non possiedi alcun tank! Vai al negozio per acquistarne uno.</p>');
+            return;
+          }
+          
+          tanks.forEach(tank => {
+            const div = $(`
+              <div class="slot" data-id="${tank.id}">
+                <img src="/maps${tank.cover_path}" alt="${tank.name}" onerror="this.src='/images/carro_armato_1.png'">
+                <p>${tank.name}</p>
+              </div>
+            `);
+            
+            div.click(() => selectMpTank(tank.id, div));
+            container.append(div);
+          });
+        })
+        .catch(err => {
+          console.error('Errore caricamento tank MP:', err);
+          $('#mp-tank-selection').html('<h4>Seleziona Tank:</h4><p>Errore di connessione</p>');
+        });
+    }
+    
+    // Selezione tank single player
+    function selectTank(tankId, element) {
+      $('#tank-slots .slot').removeClass('selected');
+      element.addClass('selected');
+      selectedTankId = tankId;
+      $('#genBtn').prop('disabled', false);
+    }
+    
+    // Selezione tank multiplayer
+    function selectMpTank(tankId, element) {
+      $('#mp-tank-selection .slot').removeClass('selected');
+      element.addClass('selected');
+      selectedMpTankId = tankId;
+      updateCreateButton();
+    }
+    
+    function updateCreateButton() {
+      $('#create-match-btn').prop('disabled', !selectedMpMapId || !selectedMpTankId);
+    }
+    
+    // Avvia partita single player
+    $('#genBtn').click(() => {
+      if (!selectedMapId || !selectedTankId) return;
+      window.location.href = `/game/index.html?id=${selectedMapId}&tank=${selectedTankId}`;
+    });
+    
+    // Gestione Multiplayer
+    function createMatch() {
+      if (!selectedMpMapId || !selectedMpTankId) return;
+      
+      const maxPlayers = $('#max-players').val();
+      
+      fetch('/user/src/multiplayer.php/multiplayer/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token,
+          map_id: selectedMpMapId,
+          tank_id: selectedMpTankId,
+          max_players: maxPlayers
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          alert(`Partita creata! ID: ${data.match_id}`);
+          refreshMatches();
+        } else {
+          alert('Errore: ' + (data.error || 'Creazione fallita'));
+        }
+      })
+      .catch(e => {
+        console.error('Errore creazione partita:', e);
+        alert('Errore nella creazione della partita');
+      });
+    }
+    
+    function refreshMatches() {
+      fetch('/user/src/multiplayer.php/multiplayer/list')
+        .then(r => r.json())
+        .then(matches => {
+          const container = $('#available-matches');
+          container.empty();
+          
+          if (matches.length === 0) {
+            container.html('<div style="text-align: center; padding: 20px;">Nessuna partita disponibile</div>');
+            return;
+          }
+          
+          matches.forEach(match => {
+            const mapDisplay = match.map_name ? match.map_name : `Mappa ${match.map_id}`;
+            const div = $(`
+              <div class="match-item">
+                <div>
+                  <strong>Mappa ${mapDisplay}</strong><br>
+                  Creata da: ${match.created_by_name}<br>
+                  Giocatori: ${match.current_players}/${match.max_players}
+                </div>
+                <div>
+                  <button onclick="joinMatch('${match.id}')" class="nav-btn">Unisciti</button>
+                  <button onclick="inviteFriend('${match.id}')" class="nav-btn">Invita Amico</button>
+                </div>
+              </div>
+            `);
+            container.append(div);
+          });
+        })
+        .catch(e => console.error('Errore caricamento partite:', e));
+    }
+    
+    function joinMatch(matchId) {
+      if (!selectedMpTankId) {
+        alert('Seleziona prima un tank!');
+        return;
+      }
+      
+      fetch('/user/src/multiplayer.php/multiplayer/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token,
+          match_id: matchId,
+          tank_id: selectedMpTankId
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          alert(`Ti sei unito alla partita! (${data.current_players}/${data.max_players})`);
+          if (data.can_start) {
+            // Reindirizza al gioco multiplayer
+            window.location.href = `/game/index.html?match=${matchId}&tank=${selectedMpTankId}`;
+          }
+          refreshMatches();
+        } else {
+          alert('Errore: ' + (data.error || 'Join fallito'));
+        }
+      })
+      .catch(e => {
+        console.error('Errore join partita:', e);
+        alert('Errore nell\'unirsi alla partita');
+      });
+    }
+    
+    function inviteFriend(matchId) {
+      const friendUsername = prompt('Inserisci il nome utente dell\'amico da invitare:');
+      if (!friendUsername) return;
+      
+      fetch('/user/src/multiplayer.php/multiplayer/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token,
+          friend_username: friendUsername,
+          match_id: matchId
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          alert('Invito inviato!');
+        } else {
+          alert('Errore: ' + (data.error || 'Invito fallito'));
+        }
+      })
+      .catch(e => {
+        console.error('Errore invio invito:', e);
+        alert('Errore nell\'invio dell\'invito');
+      });
+    }
+    
+    // Gestione inviti
+    function loadInvites() {
+      fetch(`/user/src/multiplayer.php/multiplayer/invites?token=${token}`)
+        .then(r => r.json())
+        .then(data => {
+          console.log('Risposta inviti:', data);
+          
+          // Verifica se la risposta è valida
+          let invites = [];
+          if (Array.isArray(data)) {
+            invites = data;
+          } else if (data && Array.isArray(data.invites)) {
+            invites = data.invites;
+          } else if (data && data.error) {
+            console.warn('Errore API inviti:', data.error);
+            invites = [];
+          } else {
+            console.warn('Formato risposta inviti non valido:', data);
+            invites = [];
+          }
+          
+          $('#invites-btn').text(`📨 Inviti (${invites.length})`);
+          
+          const container = $('#invites-list');
+          container.empty();
+          
+          if (invites.length === 0) {
+            container.html('Nessun invito');
+            return;
+          }
+          
+          invites.forEach(invite => {
+            const div = $(`
+              <div class="invite-item">
+                <strong>${invite.from_username}</strong><br>
+                Mappa: ${invite.map_name}<br>
+                <button onclick="acceptInvite('${invite.match_id}')" style="margin: 5px;">Accetta</button>
+                <button onclick="declineInvite(${invite.id})" style="margin: 5px;">Rifiuta</button>
+              </div>
+            `);
+            container.append(div);
+          });
+        })
+        .catch(e => {
+          console.error('Errore caricamento inviti:', e);
+          $('#invites-btn').text('📨 Inviti (0)');
+          $('#invites-list').html('Errore nel caricamento degli inviti');
+        });
+    }
+    
+    function toggleInvites() {
+      $('#invites-panel').toggle();
+    }
+    
+    function acceptInvite(matchId) {
+      // Implementazione accettazione invito
+      alert('Funzionalità in sviluppo');
+      loadInvites();
+    }
+    
+    function declineInvite(inviteId) {
+      // Implementazione rifiuto invito
+      alert('Funzionalità in sviluppo');
+      loadInvites();
+    }
+    
+    // Altre funzioni
+    function showMapCreator() {
+      window.location.href = 'map-creator.html';
+    }
+    
+    function loadUserMaps() {
+      // Redirect to user maps page or show modal with user's custom maps
+      fetch(`/user/src/usermaps.php/usermaps/list?token=${token}`)
+        .then(r => r.json())
+        .then(maps => {
+          if (maps.length === 0) {
+            alert('Non hai ancora creato nessuna mappa personalizzata. Usa il pulsante "Crea Mappa" per iniziare!');
+            return;
+          }
+          
+          // Show maps in a simple modal or redirect to a maps management page
+          let mapsList = 'Le tue mappe personalizzate:\n\n';
+          maps.forEach((map, index) => {
+            mapsList += `${index + 1}. ${map.name} (${map.biome}, ${map.width}x${map.height})\n`;
+            mapsList += `   Creata: ${new Date(map.created_at).toLocaleDateString()}\n`;
+            mapsList += `   ${map.is_public ? 'Pubblica' : 'Privata'}\n\n`;
+          });
+          
+          alert(mapsList);
+          
+          // Future enhancement: Create a proper maps management interface
+          console.log('User maps:', maps);
+        })
+        .catch(e => {
+          console.error('Errore caricamento mappe utente:', e);
+          alert('Errore nel caricamento delle tue mappe');
+        });
+    }
+    
+    function logout() {
+      localStorage.removeItem('userToken');
+      window.location.href = '/index.html';
+    }
+    
+    // Personalizza tank - reindirizza alla pagina separata
+    function customizeTank(tankId) {
+        console.log('→ Personalizzazione tank:', tankId);
+        
+        // Verifica se abbiamo un token valido
+        const userToken = localStorage.getItem('userToken');
+        if (!userToken) {
+            alert('⚠️ Devi effettuare il login per personalizzare i tank!');
+            window.location.href = '../user/src/index.php';
+            return;
+        }
+        
+        // Reindirizza alla pagina di personalizzazione
+        window.location.href = `customize-tank.html?tank=${tankId}`;
+    }
+    
+    // ===== LOCAL MULTIPLAYER FUNCTIONS =====
+    
+    // Carica mappe per local coop
+    function loadCoopMaps() {
+      fetch('/maps/api.php?endpoint=maps/slots')
+        .then(r => r.json())
+        .then(data => {
+          console.log('Mappe Coop caricate:', data);
+          const container = $('#coop-map-selection');
+          container.html('<h4>Seleziona Mappa:</h4>');
+          
+          if (!Array.isArray(data)) {
+            console.error('Formato dati mappe Coop non valido:', data);
+            container.append('<p>Errore nel caricamento delle mappe</p>');
+            return;
+          }
+          
+          data.forEach(slot => {
+            const div = $(`
+              <div class="slot" data-id="${slot.id}">
+                <img src="/maps${slot.cover_path}" alt="${slot.name}" onerror="this.src='/images/deserto.jpg'">
+                <p>${slot.name}</p>
+              </div>
+            `);
+            
+            div.click(() => selectCoopMap(slot.id, div));
+            container.append(div);
+          });
+        })
+        .catch(err => {
+          console.error('Errore caricamento mappe Coop:', err);
+          $('#coop-map-selection').html('<h4>Seleziona Mappa:</h4><p>Errore di connessione</p>');
+        });
+    }
+    
+    // Selezione mappa local coop
+    function selectCoopMap(mapId, element) {
+      $('#coop-map-selection .slot').removeClass('selected');
+      element.addClass('selected');
+      selectedCoopMapId = mapId;
+    }
+    
+    // Crea partita locale
+    function createLocalMatch() {
+      if (!selectedCoopMapId) {
+        alert('Seleziona prima una mappa!');
+        return;
+      }
+      
+      const maxPlayers = $('#coop-max-players').val();
+      const gameMode = $('#coop-game-mode').val();
+      const playersPerTank = 2; // Sempre 2 per cooperativo
+      
+      fetch('/user/src/local-multiplayer.php/create-local-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token,
+          map_id: selectedCoopMapId,
+          max_players: parseInt(maxPlayers),
+          game_mode: gameMode,
+          players_per_tank: playersPerTank
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          currentLocalMatchId = data.match_id;
+          $('#local-match-id').text(data.match_id);
+          $('#local-match-created').show();
+          $('#local-join-section').hide();
+          $('#local-players-section').show();
+          
+          // Carica stato partita
+          loadLocalMatchStatus();
+          
+          alert(`Partita locale creata! ID: ${data.match_id}\nCondividi questo ID con gli altri giocatori.`);
+        } else {
+          alert('Errore: ' + (data.error || 'Creazione fallita'));
+        }
+      })
+      .catch(e => {
+        console.error('Errore creazione partita locale:', e);
+        alert('Errore nella creazione della partita locale');
+      });
+    }
+    
+    // Join partita locale
+    function joinLocalMatch() {
+      const matchId = $('#local-match-id-input').val().trim();
+      if (!matchId) {
+        alert('Inserisci un ID partita valido!');
+        return;
+      }
+      
+      fetch('/user/src/local-multiplayer.php/join-local-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token,
+          match_id: matchId
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          currentLocalMatchId = matchId;
+          $('#local-join-section').hide();
+          $('#local-players-section').show();
+          
+          // Carica stato partita
+          loadLocalMatchStatus();
+          
+          alert(`Ti sei unito alla partita! Ruolo: ${data.role} - Tank ${data.tank_slot}`);
+        } else {
+          alert('Errore: ' + (data.error || 'Join fallito'));
+        }
+      })
+      .catch(e => {
+        console.error('Errore join partita locale:', e);
+        alert('Errore nell\'unirsi alla partita');
+      });
+    }
+    
+    // Carica stato partita locale
+    function loadLocalMatchStatus() {
+      if (!currentLocalMatchId) return;
+      
+      fetch(`/user/src/local-multiplayer.php/match-status?match_id=${currentLocalMatchId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            localMatchData = data;
+            updateLocalPlayersDisplay();
+            updateRolesConfiguration();
+            
+            // Abilita start se abbastanza giocatori
+            const canStart = data.match.current_players >= 2;
+            $('#start-local-btn').prop('disabled', !canStart);
+          } else {
+            console.error('Errore stato partita:', data.error);
+          }
+        })
+        .catch(e => {
+          console.error('Errore caricamento stato:', e);
+        });
+    }
+    
+    // Aggiorna display giocatori
+    function updateLocalPlayersDisplay() {
+      if (!localMatchData) return;
+      
+      const container = $('#local-players-list');
+      container.empty();
+      
+      localMatchData.players.forEach(player => {
+        const div = $(`
+          <div class="player-item" style="background: rgba(255,255,255,0.1); margin: 10px 0; padding: 10px; border-radius: 5px;">
+            <strong>${player.username}</strong><br>
+            Tank ${player.tank_slot_number} - ${player.player_role}<br>
+            Controlli: Schema ${player.control_scheme}
+            <span style="float: right; color: ${player.status === 'ready' ? '#27ae60' : '#f39c12'};">
+              ${player.status === 'ready' ? '✅' : '⏳'}
+            </span>
+          </div>
+        `);
+        container.append(div);
+      });
+      
+      // Mostra configurazione ruoli se sei il creatore
+      if (localMatchData.match.created_by_user_id === getUserIdFromToken()) {
+        $('#roles-configuration').show();
+      }
+    }
+    
+    // Aggiorna configurazione ruoli
+    function updateRolesConfiguration() {
+      if (!localMatchData) return;
+      
+      // Popola dropdown giocatori
+      const playerOptions = localMatchData.players.map(p => 
+        `<option value="${p.user_id}">${p.username}</option>`
+      ).join('');
+      
+      $('#tank1-driver, #tank1-gunner, #tank2-driver, #tank2-gunner').html(
+        '<option value="">Nessuno</option>' + playerOptions
+      );
+      
+      // Imposta assegnazioni attuali
+      localMatchData.players.forEach(player => {
+        const tankNum = player.tank_slot_number;
+        const role = player.player_role;
+        const selectId = `#tank${tankNum}-${role}`;
+        $(selectId).val(player.user_id);
+        
+        const controlsId = `#tank${tankNum}-${role}-controls`;
+        $(controlsId).val(player.control_scheme);
+      });
+      
+      // Nascondi Tank 2 se solo 2 giocatori
+      if (localMatchData.match.max_players <= 2) {
+        $('#tank2-section').hide();
+      } else {
+        $('#tank2-section').show();
+      }
+    }
+    
+    // Salva configurazione ruoli
+    function saveRolesConfiguration() {
+      const assignments = [];
+      
+      // Raccogli assegnazioni Tank 1
+      const tank1Driver = $('#tank1-driver').val();
+      const tank1Gunner = $('#tank1-gunner').val();
+      
+      if (tank1Driver) {
+        assignments.push({
+          player_id: tank1Driver,
+          tank_slot: 1,
+          role: 'driver',
+          control_scheme: $('#tank1-driver-controls').val()
+        });
+      }
+      
+      if (tank1Gunner) {
+        assignments.push({
+          player_id: tank1Gunner,
+          tank_slot: 1,
+          role: 'gunner',
+          control_scheme: $('#tank1-gunner-controls').val()
+        });
+      }
+      
+      // Tank 2 se necessario
+      if (localMatchData.match.max_players > 2) {
+        const tank2Driver = $('#tank2-driver').val();
+        const tank2Gunner = $('#tank2-gunner').val();
+        
+        if (tank2Driver) {
+          assignments.push({
+            player_id: tank2Driver,
+            tank_slot: 2,
+            role: 'driver',
+            control_scheme: $('#tank2-driver-controls').val()
+          });
+        }
+        
+        if (tank2Gunner) {
+          assignments.push({
+            player_id: tank2Gunner,
+            tank_slot: 2,
+            role: 'gunner',
+            control_scheme: $('#tank2-gunner-controls').val()
+          });
+        }
+      }
+      
+      fetch('/user/src/local-multiplayer.php/assign-roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token,
+          match_id: currentLocalMatchId,
+          assignments: assignments
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          alert('Configurazione salvata!');
+          loadLocalMatchStatus(); // Ricarica per aggiornare
+        } else {
+          alert('Errore: ' + (data.error || 'Salvataggio fallito'));
+        }
+      })
+      .catch(e => {
+        console.error('Errore salvataggio configurazione:', e);
+        alert('Errore nel salvataggio');
+      });
+    }
+    
+    // Avvia gioco locale
+    function startLocalGame() {
+      if (!currentLocalMatchId) return;
+      
+      fetch('/user/src/local-multiplayer.php/start-local-game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token,
+          match_id: currentLocalMatchId
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          // Reindirizza al gioco locale
+          window.location.href = data.game_url;
+        } else {
+          alert('Errore: ' + (data.error || 'Avvio fallito'));
+        }
+      })
+      .catch(e => {
+        console.error('Errore avvio gioco:', e);
+        alert('Errore nell\'avvio del gioco');
+      });
+    }
+    
+    // Aggiorna partita locale
+    function refreshLocalMatch() {
+      loadLocalMatchStatus();
+    }
+    
+    // Helper per ottenere user ID dal token (semplificato)
+    function getUserIdFromToken() {
+      // Implementazione semplificata - in produzione dovresti decodificare il token
+      return 1; // Placeholder
+    }
+  </script>
+</body>
+</html>

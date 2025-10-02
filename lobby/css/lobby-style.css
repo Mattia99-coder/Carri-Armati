@@ -1,0 +1,312 @@
+@charset "UTF-8";
+
+body {
+    box-sizing: border-box;
+    background-color: black;
+    display: flex;
+    flex-direction: column;
+}
+
+p {
+    color: white;
+}
+
+button {
+    padding: 4px 8px 4px 8px;
+    border-radius: 15px;
+    border: 0;
+    align-self: center;
+    margin-right: 5%;
+}
+
+button:hover {
+    background-color: #9c9c9c;
+    text-decoration: underline;
+}
+
+
+.invita_button {
+    display: none;
+    margin-top: 2%;
+    cursor: pointer;
+    padding: 4px 8px 4px 8px;
+    margin-right: 0%;
+}
+
+header {
+    height: 1%;
+    width: 97%;
+    display: flex;
+    flex-direction: row;
+    padding-top: 1%;
+    padding-left: 1%;
+}
+
+.amici {
+    display: flex;
+    width: 13.75%;
+    flex-direction: row;
+    justify-content: center;
+    align-content: center;
+    margin-left: 45%;
+    margin-right: 0;
+}
+
+.navbar {
+    border-color: white;
+    overflow: hidden;
+}
+
+/* Stile per gli elementi del menu */
+.menu {
+    list-style-type: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+}
+
+.menu-item {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-item img {
+    width: 25px;
+    height: 25px;
+    border-radius: 0;
+    align-self: center;
+    margin-right: 10px;
+}
+
+.menu-item p {
+    display: block;
+    color: white;
+    text-decoration: none;
+}
+
+.menu-item:hover{
+    text-decoration: underline;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    border-color: white;
+    text-align: center;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    min-width: 160px;
+    top: 100%;
+    padding: 5px;
+    left: 0;
+    cursor: pointer;
+}
+
+.dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+
+.dropdown-menu a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    text-decoration: none;
+}
+
+.dropdown-menu a li {
+    width: 100%;
+    margin: 0;
+    padding: 5% 0;
+    text-align: center;
+    border: solid 1px white;
+}
+
+.dropdown-menu a li:hover {
+    background-color: white;
+    color: black;
+    text-decoration: none;
+}
+
+a {
+    text-decoration: none;
+    color: white;
+}
+
+
+header button {
+    padding: 16px 32px 16px 32px;
+    border-radius: 15px;
+    border: 0;
+    align-self: center;
+    margin-right: 5%;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+button:hover {
+    background-color: #9c9c9c;
+    text-decoration: underline;
+}
+
+.search-button {
+    margin-bottom: 2%;
+}
+
+.partita,.lista-amici,.lista-mappe, .mie-mappe {
+    position: absolute;
+    display: none;
+    background-color: black;
+    width: 70%;
+    align-self: center;
+    height: 75%;
+    border: solid white 2px;
+    justify-content: center;
+}
+
+.mie-mappe {
+    margin-top: 5%;
+}
+
+.partita,.lista-amici,.lista-mappe, .mie-mappe p {
+    color: white;
+    text-align: center;
+    margin-top: 5%;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.mie-mappe p {
+    margin-top: 1.8%;
+}
+
+.invita,.unisciti,.mappe, .maps {
+    width: 100%;
+}
+
+table {
+    margin-left: 5%;
+    width: 90%;
+}
+
+table tr {
+    border: 0;
+    width: 100%;
+} 
+
+td img {
+    object-fit: cover;
+    width: 12vw;
+    height: 20vh;
+}
+
+td img:hover {
+    cursor: pointer;
+    border: solid 2px white;
+}
+
+td {
+    color: white;
+    text-align: center;
+}
+
+.pulsanti-mappe {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 5%;
+}
+
+.select-map {
+    background-color: #00ff30;
+}
+
+.select-map:hover {
+    background-color: green;
+    text-decoration: underline;
+}
+
+.delete-map {
+    background-color: red;
+}
+.delete-map:hover {
+    background-color: #9f0000;
+    text-decoration: underline;
+}
+
+.close_icon,.back_icon {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
+.back_icon {
+    top: 5px;
+    left: 10px;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
+.hero {
+    display: flex;
+    align-items: center;
+    margin-top: 10%;
+    margin-left: 5%;
+}
+
+.user, .giocatore {
+    width: 20%;
+    background-color: white;
+    border-radius: 25px;
+    padding-top: 2%;
+    padding-bottom: 2%;
+    margin-right: 10%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
+.user:hover .invita_button {
+    display: block;
+}
+
+.user-tank,.giocatore-tank {
+    width: 90%;
+    object-fit: cover;
+}
+
+.user,.giocatore p {
+    margin-left: 1%;
+    color: black;
+}
+
+#logout-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 20px;
+    transition: background-color 0.3s;
+}
+
+#logout-btn:hover {
+    background-color: #ff0000;
+}
+

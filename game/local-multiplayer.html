@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <link rel="icon" href="data:,">
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Local Multiplayer Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+    #wrapper {
+      padding: 20px;
+      border: 4px solid #27ae60;
+      box-sizing: border-box;
+    }
+    canvas {
+      image-rendering: pixelated;
+      display: block;
+    }
+    #ui {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      z-index: 1000;
+      border-left: 4px solid #27ae60;
+    }
+    .tank-ui {
+      display: flex;
+      gap: 30px;
+      margin-top: 10px;
+    }
+    .tank-info {
+      background: rgba(255,255,255,0.1);
+      padding: 10px;
+      border-radius: 5px;
+      min-width: 150px;
+    }
+    .tank-info h4 {
+      margin: 0 0 5px 0;
+      color: #27ae60;
+    }
+    .controls-help {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 1000;
+      font-size: 12px;
+    }
+    .tank-health {
+      width: 100px;
+      height: 6px;
+      background: #ff0000;
+      border-radius: 3px;
+      margin: 5px 0;
+    }
+    .tank-health-fill {
+      height: 100%;
+      background: #27ae60;
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrapper">
+    <canvas id="c"></canvas>
+  </div>
+  
+  <!-- UI Informazioni -->
+  <div id="ui">
+    <div style="font-size: 18px; margin-bottom: 10px;">🎮 Local Multiplayer Co-op</div>
+    <div>Score: <span id="total-score">0</span></div>
+    <div class="tank-ui" id="tank-ui">
+      <!-- Tank info verrà popolata dinamicamente -->
+    </div>
+  </div>
+  
+  <!-- Guida controlli -->
+  <div class="controls-help" id="controls-help">
+    <!-- Schema controlli verrà popolato dinamicamente -->
+  </div>
+  
+  <!-- Include JavaScript libraries -->
+  <script src="simplex-noise.js?v=3"></script>
+  <script src="tiles.js?v=3"></script>
+  
+  <script>
+    console.log('→ Local Multiplayer Game avviato');
+    
+    // Estrai parametri URL
+    const params = new URLSearchParams(window.location.search);
+    let mapId = parseInt(params.get('id'), 10) || 1;
+    let tankId = parseInt(params.get('tank'), 10) || 1;
+    const matchId = params.get('match');
+    const mode = params.get('mode') || 'local_coop';
+    
+    console.log('→ Parametri:', { mapId, tankId, matchId, mode });
+    
+    if (!matchId) {
+      alert('Match ID richiesto per local multiplayer');
+      window.location.href = '../lobby/index.html';
+    }
+    
+    // Configurazione di gioco
+    let gameConfig = {
+      matchId: matchId,
+      mode: mode,
+      isLocalMultiplayer: true,
+      tanks: [],
+      players: [],
+      currentScore: 0,
+      startTime: Date.now()
+    };
+    
+    // Token per autenticazione
+    const token = localStorage.getItem('userToken');
+    
+    // Canvas e contesti
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    
+    let zoom = 1;
+    let engine;
+    let camera = { x: 0, y: 0 };
+    
+    // Sistema di gioco
+    let enemies = [];
+    let obstacles = [];
+    let bullets = [];
+    let gameRunning = false;
+    let lastTime = 0;
+    
+    // Mappa controlli
+    const controlSchemes = {
+      1: { // WASD + Space
+        up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', fire: 'Space'
+      },
+      2: { // Frecce + Enter
+        up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', fire: 'Enter'
+      },
+      3: { // IJKL + M
+        up: 'KeyI', down: 'KeyK', left: 'KeyJ', right: 'KeyL', fire: 'KeyM'
+      },
+      4: { // Numpad
+        up: 'Numpad8', down: 'Numpad5', left: 'Numpad4', right: 'Numpad6', fire: 'Numpad0'
+      }
+    };
+    
+    // Stato tasti premuti
+    const keysPressed = {};
+    
+    // Classe Tank per multiplayer cooperativo
+    class LocalMultiplayerTank {
+      constructor(config) {
+        this.id = config.tank_slot_number;
+        this.x = config.spawn_x || 100;
+        this.y = config.spawn_y || 100;
+        this.width = 32;
+        this.height = 32;
+        this.angle = 0;
+        this.health = 200;
+        this.maxHealth = 200;
+        this.speed = 100; // pixels per second
+        this.fireRate = 500; // milliseconds between shots
+        this.lastShot = 0;
+        this.tankModelId = config.tank_model_id || 1;
+        this.teamId = config.team_id || 1;
+        
+        // Giocatori assegnati
+        this.driverPlayerId = config.driver_player_id;
+        this.gunnerPlayerId = config.gunner_player_id;
+        this.driverControls = null;
+        this.gunnerControls = null;
+        
+        // Movimenti e spari separati
+        this.isMoving = false;
+        this.moveDirection = { x: 0, y: 0 };
+        this.canFire = true;
+        
+        // Carica immagine tank
+        this.image = new Image();
+        this.image.src = `/maps/assets/tanks/${this.tankModelId}.png`;
+        this.image.onerror = () => {
+          this.image.src = `/images/carro_armato_1.png`;
+        };
+      }
+      
+      // Assegna schemi di controllo
+      assignControls(driverScheme, gunnerScheme) {
+        this.driverControls = driverScheme ? controlSchemes[driverScheme] : null;
+        this.gunnerControls = gunnerScheme ? controlSchemes[gunnerScheme] : null;
+      }
+      
+      // Aggiorna movimento (driver)
+      updateMovement(deltaTime) {
+        if (!this.driverControls) return;
+        
+        let dx = 0, dy = 0;
+        const moveSpeed = this.speed * deltaTime / 1000;
+        
+        if (keysPressed[this.driverControls.up]) dy -= moveSpeed;
+        if (keysPressed[this.driverControls.down]) dy += moveSpeed;
+        if (keysPressed[this.driverControls.left]) dx -= moveSpeed;
+        if (keysPressed[this.driverControls.right]) dx += moveSpeed;
+        
+        // Normalizza movimento diagonale
+        if (dx !== 0 && dy !== 0) {
+          dx *= 0.707;
+          dy *= 0.707;
+        }
+        
+        if (dx !== 0 || dy !== 0) {
+          this.x += dx;
+          this.y += dy;
+          this.angle = Math.atan2(dy, dx);
+          this.isMoving = true;
+        } else {
+          this.isMoving = false;
+        }
+      }
+      
+      // Gestisce sparo (gunner)
+      handleFiring(currentTime) {
+        if (!this.gunnerControls) return;
+        
+        if (keysPressed[this.gunnerControls.fire] && 
+            currentTime - this.lastShot >= this.fireRate) {
+          this.fire();
+          this.lastShot = currentTime;
+        }
+      }
+      
+      // Spara proiettile
+      fire() {
+        const bullet = {
+          x: this.x + this.width / 2,
+          y: this.y + this.height / 2,
+          vx: Math.cos(this.angle) * 400,
+          vy: Math.sin(this.angle) * 400,
+          damage: 100,
+          isEnemyBullet: false,
+          tankId: this.id,
+          lifetime: 2000
+        };
+        
+        bullets.push(bullet);
+        gameConfig.currentScore += 5; // Punti per sparo
+        console.log(`→ Tank ${this.id} spara!`);
+      }
+      
+      // Ricevi danno
+      takeDamage(damage) {
+        this.health = Math.max(0, this.health - damage);
+        if (this.health <= 0) {
+          console.log(`→ Tank ${this.id} distrutto!`);
+          return true; // Tank distrutto
+        }
+        return false;
+      }
+      
+      // Disegna tank
+      draw() {
+        ctx.save();
+        ctx.translate(this.x + this.width/2, this.y + this.height/2);
+        ctx.rotate(this.angle);
+        
+        if (this.image && this.image.complete) {
+          ctx.drawImage(this.image, -this.width/2, -this.height/2, this.width, this.height);
+        } else {
+          // Fallback: disegna rettangolo colorato
+          const color = this.teamId === 1 ? '#0066ff' : '#ff6600';
+          ctx.fillStyle = color;
+          ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+        }
+        
+        ctx.restore();
+        
+        // Barra salute
+        if (this.health < this.maxHealth) {
+          const healthRatio = this.health / this.maxHealth;
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(this.x, this.y - 8, this.width, 4);
+          ctx.fillStyle = '#00ff00';
+          ctx.fillRect(this.x, this.y - 8, this.width * healthRatio, 4);
+        }
+      }
+    }
+    
+    // Inizializzazione gioco
+    async function init() {
+      console.log('→ Inizializzazione local multiplayer...');
+      
+      try {
+        // Carica configurazione partita
+        await loadMatchConfiguration();
+        
+        // Carica mappa
+        await loadGameMap();
+        
+        // Setup canvas
+        setupCanvas();
+        
+        // Inizializza sistemi di gioco
+        await initGameSystems();
+        
+        // Setup controlli
+        setupControls();
+        
+        // Avvia game loop
+        startGameLoop();
+        
+        console.log('→ Local multiplayer inizializzato con successo');
+        
+      } catch (error) {
+        console.error('Errore inizializzazione:', error);
+        alert('Errore di inizializzazione: ' + error.message);
+        window.location.href = '../lobby/index.html';
+      }
+    }
+    
+    // Carica configurazione partita dal server
+    async function loadMatchConfiguration() {
+      const response = await fetch(`/user/src/local-multiplayer.php/match-status?match_id=${matchId}`);
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error('Impossibile caricare configurazione partita');
+      }
+      
+      gameConfig.matchData = data.match;
+      gameConfig.players = data.players;
+      gameConfig.tankConfigs = data.tanks;
+      
+      // Crea tank
+      gameConfig.tanks = data.tanks.map(tankConfig => {
+        const tank = new LocalMultiplayerTank(tankConfig);
+        
+        // Trova controlli per questo tank
+        const driverPlayer = data.players.find(p => 
+          p.id === tankConfig.driver_player_id && p.player_role === 'driver'
+        );
+        const gunnerPlayer = data.players.find(p => 
+          p.id === tankConfig.gunner_player_id && p.player_role === 'gunner'
+        );
+        
+        tank.assignControls(
+          driverPlayer ? driverPlayer.control_scheme : null,
+          gunnerPlayer ? gunnerPlayer.control_scheme : null
+        );
+        
+        return tank;
+      });
+      
+      console.log('→ Configurazione caricata:', gameConfig);
+    }
+    
+    // Carica mappa di gioco
+    async function loadGameMap() {
+      const mapIdToLoad = gameConfig.matchData.map_id || 1;
+      
+      const response = await fetch(`/maps/api.php?endpoint=maps/generate&id=${mapIdToLoad}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Inizializza engine terreno
+      const terrainTypes = [];
+      if (data.biomes && data.biomes.length > 0) {
+        data.biomes.forEach(biome => {
+          if (biome.terrain_types && biome.terrain_types.length > 0) {
+            biome.terrain_types.forEach(terrain => {
+              terrainTypes.push({
+                color: terrain.color,
+                texture_pattern: terrain.texture_pattern || terrain.type,
+                type: terrain.type
+              });
+            });
+          }
+        });
+      }
+      
+      // Fallback terrain types
+      if (terrainTypes.length === 0) {
+        terrainTypes.push(
+          { color: '#228B22', texture_pattern: 'grass', type: 'grass' },
+          { color: '#8FBC8F', texture_pattern: 'dirt', type: 'dirt' }
+        );
+      }
+      
+      engine = createTileEngine(data.seed, terrainTypes);
+      console.log('→ Mappa caricata:', data.name);
+    }
+    
+    // Setup canvas
+    function setupCanvas() {
+      canvas.width = 1000;
+      canvas.height = 700;
+      ctx.imageSmoothingEnabled = false;
+      
+      // Centra camera sul primo tank
+      if (gameConfig.tanks.length > 0) {
+        const firstTank = gameConfig.tanks[0];
+        camera.x = firstTank.x - canvas.width / 2;
+        camera.y = firstTank.y - canvas.height / 2;
+      }
+    }
+    
+    // Inizializza sistemi di gioco (nemici, ostacoli)
+    async function initGameSystems() {
+      // Genera nemici per sfida cooperativa
+      generateCooperativeEnemies();
+      
+      // Genera ostacoli
+      generateObstacles();
+      
+      // Setup UI
+      setupUI();
+      
+      console.log(`→ Generati ${enemies.length} nemici e ${obstacles.length} ostacoli`);
+    }
+    
+    // Genera nemici per modalità cooperativa
+    function generateCooperativeEnemies() {
+      enemies = [];
+      const enemyCount = 12 + Math.floor(Math.random() * 8); // Più nemici per coop
+      
+      const enemyTypes = [
+        { type: 'soldier', health: 75, damage: 30, range: 180, color: '#ff8800' },
+        { type: 'tank', health: 150, damage: 60, range: 250, color: '#ff4444' },
+        { type: 'artillery', health: 120, damage: 90, range: 350, color: '#cc0000' }
+      ];
+      
+      for (let i = 0; i < enemyCount; i++) {
+        const enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        
+        const enemy = {
+          id: i,
+          type: enemyType.type,
+          x: Math.random() * 1500 - 750,
+          y: Math.random() * 1500 - 750,
+          width: 28,
+          height: 28,
+          health: enemyType.health,
+          maxHealth: enemyType.health,
+          damage: enemyType.damage,
+          range: enemyType.range,
+          reloadTime: 1000 + Math.random() * 1500,
+          lastShot: 0,
+          isAlive: true,
+          targetTankId: null,
+          color: enemyType.color,
+          aiState: 'patrol'
+        };
+        
+        enemies.push(enemy);
+      }
+    }
+    
+    // Genera ostacoli
+    function generateObstacles() {
+      obstacles = [];
+      const obstacleCount = 20 + Math.floor(Math.random() * 15);
+      
+      for (let i = 0; i < obstacleCount; i++) {
+        const obstacle = {
+          id: i,
+          x: Math.random() * 2000 - 1000,
+          y: Math.random() * 2000 - 1000,
+          width: 32 + Math.random() * 32,
+          height: 32 + Math.random() * 32,
+          health: 100 + Math.random() * 100,
+          maxHealth: 200,
+          destructible: Math.random() > 0.3,
+          isDestroyed: false,
+          color: Math.random() > 0.5 ? '#8B4513' : '#696969'
+        };
+        
+        obstacles.push(obstacle);
+      }
+    }
+    
+    // Setup UI
+    function setupUI() {
+      updateTankUI();
+      updateControlsHelp();
+    }
+    
+    // Aggiorna UI tank
+    function updateTankUI() {
+      const tankUI = document.getElementById('tank-ui');
+      tankUI.innerHTML = '';
+      
+      gameConfig.tanks.forEach((tank, index) => {
+        const driverPlayer = gameConfig.players.find(p => p.id === tank.driverPlayerId);
+        const gunnerPlayer = gameConfig.players.find(p => p.id === tank.gunnerPlayerId);
+        
+        const tankDiv = document.createElement('div');
+        tankDiv.className = 'tank-info';
+        tankDiv.innerHTML = `
+          <h4>🚗 Tank ${tank.id}</h4>
+          <div>Driver: ${driverPlayer ? driverPlayer.username : 'Nessuno'}</div>
+          <div>Gunner: ${gunnerPlayer ? gunnerPlayer.username : 'Nessuno'}</div>
+          <div class="tank-health">
+            <div class="tank-health-fill" id="tank${tank.id}-health" style="width: 100%"></div>
+          </div>
+          <div>HP: <span id="tank${tank.id}-hp">${tank.health}</span>/${tank.maxHealth}</div>
+        `;
+        
+        tankUI.appendChild(tankDiv);
+      });
+    }
+    
+    // Aggiorna guida controlli
+    function updateControlsHelp() {
+      const controlsHelp = document.getElementById('controls-help');
+      let helpText = '<strong>Controlli:</strong><br>';
+      
+      gameConfig.tanks.forEach(tank => {
+        const driverPlayer = gameConfig.players.find(p => p.id === tank.driverPlayerId);
+        const gunnerPlayer = gameConfig.players.find(p => p.id === tank.gunnerPlayerId);
+        
+        if (tank.driverControls) {
+          helpText += `Tank ${tank.id} Driver (${driverPlayer?.username}): `;
+          helpText += `${getKeyName(tank.driverControls.up)}↑ ${getKeyName(tank.driverControls.left)}← `;
+          helpText += `${getKeyName(tank.driverControls.down)}↓ ${getKeyName(tank.driverControls.right)}→<br>`;
+        }
+        
+        if (tank.gunnerControls) {
+          helpText += `Tank ${tank.id} Gunner (${gunnerPlayer?.username}): `;
+          helpText += `${getKeyName(tank.gunnerControls.fire)}=Spara<br>`;
+        }
+      });
+      
+      helpText += '<br>ESC = Menu | P = Pausa';
+      controlsHelp.innerHTML = helpText;
+    }
+    
+    // Converte codice tasto in nome leggibile
+    function getKeyName(keyCode) {
+      const keyNames = {
+        'KeyW': 'W', 'KeyA': 'A', 'KeyS': 'S', 'KeyD': 'D',
+        'KeyI': 'I', 'KeyJ': 'J', 'KeyK': 'K', 'KeyL': 'L', 'KeyM': 'M',
+        'ArrowUp': '↑', 'ArrowDown': '↓', 'ArrowLeft': '←', 'ArrowRight': '→',
+        'Space': 'Space', 'Enter': 'Enter',
+        'Numpad8': 'Num8', 'Numpad4': 'Num4', 'Numpad5': 'Num5', 
+        'Numpad6': 'Num6', 'Numpad0': 'Num0'
+      };
+      return keyNames[keyCode] || keyCode;
+    }
+    
+    // Setup controlli
+    function setupControls() {
+      document.addEventListener('keydown', (e) => {
+        keysPressed[e.code] = true;
+        
+        // Gestione tasti speciali
+        if (e.code === 'Escape') {
+          pauseGame();
+        }
+        if (e.code === 'KeyP') {
+          togglePause();
+        }
+      });
+      
+      document.addEventListener('keyup', (e) => {
+        keysPressed[e.code] = false;
+      });
+      
+      // Zoom con mouse wheel
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.1 : -0.1;
+        zoom = Math.max(0.5, Math.min(2, zoom + delta));
+      });
+    }
+    
+    // Game loop principale
+    function gameLoop(currentTime) {
+      if (!gameRunning) return;
+      
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
+      
+      // Aggiorna tank
+      gameConfig.tanks.forEach(tank => {
+        tank.updateMovement(deltaTime);
+        tank.handleFiring(currentTime);
+      });
+      
+      // Aggiorna nemici
+      updateEnemies(deltaTime, currentTime);
+      
+      // Aggiorna proiettili
+      updateBullets(deltaTime);
+      
+      // Aggiorna camera (segue tank principale)
+      updateCamera();
+      
+      // Disegna tutto
+      draw();
+      
+      // Aggiorna UI
+      updateGameUI();
+      
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // Aggiorna nemici (AI migliorata per coop)
+    function updateEnemies(deltaTime, currentTime) {
+      enemies.forEach(enemy => {
+        if (!enemy.isAlive) return;
+        
+        // Trova tank più vicino come target
+        let closestTank = null;
+        let minDistance = Infinity;
+        
+        gameConfig.tanks.forEach(tank => {
+          if (tank.health <= 0) return;
+          
+          const dx = tank.x - enemy.x;
+          const dy = tank.y - enemy.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestTank = tank;
+          }
+        });
+        
+        if (closestTank && minDistance <= enemy.range) {
+          enemy.targetTankId = closestTank.id;
+          
+          // Spara se può
+          if (currentTime - enemy.lastShot >= enemy.reloadTime) {
+            fireEnemyBullet(enemy, closestTank);
+            enemy.lastShot = currentTime;
+          }
+        } else {
+          enemy.targetTankId = null;
+        }
+      });
+    }
+    
+    // Sparo nemico
+    function fireEnemyBullet(enemy, targetTank) {
+      const dx = targetTank.x - enemy.x;
+      const dy = targetTank.y - enemy.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      const bullet = {
+        x: enemy.x + enemy.width / 2,
+        y: enemy.y + enemy.height / 2,
+        vx: (dx / distance) * 250,
+        vy: (dy / distance) * 250,
+        damage: enemy.damage,
+        isEnemyBullet: true,
+        lifetime: 3000
+      };
+      
+      bullets.push(bullet);
+    }
+    
+    // Aggiorna proiettili
+    function updateBullets(deltaTime) {
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const bullet = bullets[i];
+        
+        // Movimento
+        bullet.x += bullet.vx * deltaTime / 1000;
+        bullet.y += bullet.vy * deltaTime / 1000;
+        bullet.lifetime -= deltaTime;
+        
+        // Rimuovi se scaduto
+        if (bullet.lifetime <= 0) {
+          bullets.splice(i, 1);
+          continue;
+        }
+        
+        // Collisioni
+        if (bullet.isEnemyBullet) {
+          // Proiettile nemico vs tank
+          for (let tank of gameConfig.tanks) {
+            if (tank.health <= 0) continue;
+            
+            if (isColliding(bullet, tank)) {
+              const destroyed = tank.takeDamage(bullet.damage);
+              bullets.splice(i, 1);
+              
+              if (destroyed) {
+                console.log(`Tank ${tank.id} distrutto!`);
+                checkGameOver();
+              }
+              break;
+            }
+          }
+        } else {
+          // Proiettile tank vs nemici
+          for (let enemy of enemies) {
+            if (!enemy.isAlive) continue;
+            
+            if (isColliding(bullet, enemy)) {
+              enemy.health -= bullet.damage;
+              if (enemy.health <= 0) {
+                enemy.isAlive = false;
+                gameConfig.currentScore += 100;
+                console.log(`Nemico eliminato! Score: ${gameConfig.currentScore}`);
+              }
+              bullets.splice(i, 1);
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Test collisione semplice
+    function isColliding(obj1, obj2) {
+      return obj1.x < obj2.x + (obj2.width || 4) &&
+             obj1.x + (obj1.width || 4) > obj2.x &&
+             obj1.y < obj2.y + (obj2.height || 4) &&
+             obj1.y + (obj1.height || 4) > obj2.y;
+    }
+    
+    // Aggiorna camera
+    function updateCamera() {
+      if (gameConfig.tanks.length === 0) return;
+      
+      // Trova il centro medio di tutti i tank vivi
+      let centerX = 0, centerY = 0, aliveTanks = 0;
+      
+      gameConfig.tanks.forEach(tank => {
+        if (tank.health > 0) {
+          centerX += tank.x;
+          centerY += tank.y;
+          aliveTanks++;
+        }
+      });
+      
+      if (aliveTanks > 0) {
+        centerX /= aliveTanks;
+        centerY /= aliveTanks;
+        
+        // Smooth camera follow
+        const targetX = centerX - canvas.width / 2 / zoom;
+        const targetY = centerY - canvas.height / 2 / zoom;
+        
+        camera.x += (targetX - camera.x) * 0.05;
+        camera.y += (targetY - camera.y) * 0.05;
+      }
+    }
+    
+    // Disegna tutto
+    function draw() {
+      if (!engine) return;
+      
+      ctx.resetTransform();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(zoom, zoom);
+      ctx.translate(-camera.x, -camera.y);
+      
+      // Disegna terreno
+      drawTerrain();
+      
+      // Disegna ostacoli
+      drawObstacles();
+      
+      // Disegna nemici
+      drawEnemies();
+      
+      // Disegna proiettili
+      drawBullets();
+      
+      // Disegna tank
+      gameConfig.tanks.forEach(tank => {
+        if (tank.health > 0) {
+          tank.draw();
+        }
+      });
+    }
+    
+    // Disegna terreno (semplificato)
+    function drawTerrain() {
+      const TILE_SIZE = engine.TILE_SIZE || 32;
+      const CHUNK_SIZE = engine.CHUNK_SIZE || 16;
+      
+      // Area visibile
+      const viewW = canvas.width / zoom;
+      const viewH = canvas.height / zoom;
+      const cx0 = Math.floor(camera.x / (TILE_SIZE * CHUNK_SIZE));
+      const cy0 = Math.floor(camera.y / (TILE_SIZE * CHUNK_SIZE));
+      const cx1 = Math.floor((camera.x + viewW) / (TILE_SIZE * CHUNK_SIZE));
+      const cy1 = Math.floor((camera.y + viewH) / (TILE_SIZE * CHUNK_SIZE));
+      
+      // Disegna chunks visibili
+      for (let cx = cx0; cx <= cx1; cx++) {
+        for (let cy = cy0; cy <= cy1; cy++) {
+          if (engine.getChunk) {
+            engine.getChunk(cx, cy).then(bitmap => {
+              ctx.drawImage(bitmap, cx * CHUNK_SIZE * TILE_SIZE, cy * CHUNK_SIZE * TILE_SIZE);
+            }).catch(() => {
+              // Fallback: disegna colore base
+              ctx.fillStyle = '#228B22';
+              ctx.fillRect(
+                cx * CHUNK_SIZE * TILE_SIZE, 
+                cy * CHUNK_SIZE * TILE_SIZE,
+                CHUNK_SIZE * TILE_SIZE, 
+                CHUNK_SIZE * TILE_SIZE
+              );
+            });
+          }
+        }
+      }
+    }
+    
+    // Disegna ostacoli
+    function drawObstacles() {
+      obstacles.forEach(obstacle => {
+        if (obstacle.isDestroyed) return;
+        
+        ctx.fillStyle = obstacle.color;
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        
+        // Barra salute se danneggiato
+        if (obstacle.health < obstacle.maxHealth && obstacle.destructible) {
+          const healthRatio = obstacle.health / obstacle.maxHealth;
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(obstacle.x, obstacle.y - 6, obstacle.width, 3);
+          ctx.fillStyle = '#ffff00';
+          ctx.fillRect(obstacle.x, obstacle.y - 6, obstacle.width * healthRatio, 3);
+        }
+      });
+    }
+    
+    // Disegna nemici
+    function drawEnemies() {
+      enemies.forEach(enemy => {
+        if (!enemy.isAlive) return;
+        
+        ctx.fillStyle = enemy.color;
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        
+        // Barra salute
+        if (enemy.health < enemy.maxHealth) {
+          const healthRatio = enemy.health / enemy.maxHealth;
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(enemy.x, enemy.y - 6, enemy.width, 3);
+          ctx.fillStyle = '#00ff00';
+          ctx.fillRect(enemy.x, enemy.y - 6, enemy.width * healthRatio, 3);
+        }
+        
+        // Linea di mira se sta puntando
+        if (enemy.targetTankId) {
+          const targetTank = gameConfig.tanks.find(t => t.id === enemy.targetTankId);
+          if (targetTank) {
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(enemy.x + enemy.width/2, enemy.y + enemy.height/2);
+            ctx.lineTo(targetTank.x + targetTank.width/2, targetTank.y + targetTank.height/2);
+            ctx.stroke();
+          }
+        }
+      });
+    }
+    
+    // Disegna proiettili
+    function drawBullets() {
+      bullets.forEach(bullet => {
+        ctx.fillStyle = bullet.isEnemyBullet ? '#ff4444' : '#ffff44';
+        ctx.fillRect(bullet.x - 2, bullet.y - 2, 4, 4);
+      });
+    }
+    
+    // Aggiorna UI di gioco
+    function updateGameUI() {
+      document.getElementById('total-score').textContent = gameConfig.currentScore;
+      
+      gameConfig.tanks.forEach(tank => {
+        const healthEl = document.getElementById(`tank${tank.id}-health`);
+        const hpEl = document.getElementById(`tank${tank.id}-hp`);
+        
+        if (healthEl && hpEl) {
+          const healthPercent = (tank.health / tank.maxHealth) * 100;
+          healthEl.style.width = healthPercent + '%';
+          hpEl.textContent = tank.health;
+        }
+      });
+    }
+    
+    // Controlla fine gioco
+    function checkGameOver() {
+      const aliveTanks = gameConfig.tanks.filter(t => t.health > 0);
+      
+      if (aliveTanks.length === 0) {
+        gameRunning = false;
+        
+        setTimeout(() => {
+          alert(`Game Over!\nScore finale: ${gameConfig.currentScore}\nTempo: ${Math.floor((Date.now() - gameConfig.startTime) / 1000)}s`);
+          window.location.href = '../lobby/index.html';
+        }, 1000);
+      }
+    }
+    
+    // Avvia game loop
+    function startGameLoop() {
+      gameRunning = true;
+      lastTime = performance.now();
+      requestAnimationFrame(gameLoop);
+      console.log('→ Game loop avviato');
+    }
+    
+    // Pausa gioco
+    function pauseGame() {
+      if (confirm('Vuoi tornare alla lobby?')) {
+        window.location.href = '../lobby/index.html';
+      }
+    }
+    
+    function togglePause() {
+      gameRunning = !gameRunning;
+      if (gameRunning) {
+        requestAnimationFrame(gameLoop);
+      }
+    }
+    
+    // Avvia inizializzazione
+    init().catch(error => {
+      console.error('Errore fatale:', error);
+      alert('Errore di avvio: ' + error.message);
+      window.location.href = '../lobby/index.html';
+    });
+    
+  </script>
+</body>
+</html>

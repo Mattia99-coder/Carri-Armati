@@ -1,0 +1,929 @@
+/* === TANK ARMORY - NEGOZIO MILITARE (STILE LOBBY) === */
+@charset "UTF-8";
+
+:root {
+    /* Palette coerente con la lobby */
+    --bg-black: black;
+    --text-white: white;
+    --text-gray: #9c9c9c;
+    --border-white: white;
+    --hover-gray: #9c9c9c;
+    --button-hover: #9c9c9c;
+    --success-green: #00ff30;
+    --success-hover: green;
+    --danger-red: red;
+    --danger-hover: #9f0000;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-black);
+    color: var(--text-white);
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* === PERSONALIZZAZIONE TANK === */
+.customization-area {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.tank-customization-card {
+    background: linear-gradient(135deg, rgba(0, 100, 200, 0.1), rgba(0, 150, 100, 0.1));
+    border: 2px solid var(--border-white);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.tank-customization-card:hover {
+    border-color: var(--success-green);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 255, 48, 0.2);
+}
+
+.tank-customization-card.owned {
+    border-color: var(--success-green);
+    background: linear-gradient(135deg, rgba(0, 255, 48, 0.1), rgba(0, 200, 100, 0.1));
+}
+
+.tank-customize-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.tank-customize-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--text-white);
+}
+
+.tank-status-owned {
+    background: var(--success-green);
+    color: black;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.tank-customize-preview {
+    text-align: center;
+    margin: 15px 0;
+}
+
+.tank-customize-image {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.tank-weapons-slots {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 15px 0;
+}
+
+.weapon-slot {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--text-gray);
+    border-radius: 4px;
+    padding: 8px;
+    text-align: center;
+    font-size: 11px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.weapon-slot.filled {
+    background: rgba(0, 255, 48, 0.2);
+    border-color: var(--success-green);
+}
+
+.customize-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-customize {
+    flex: 1;
+    background: linear-gradient(135deg, var(--success-green), #00cc28);
+    color: black;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-customize:hover {
+    background: linear-gradient(135deg, #00cc28, var(--success-green));
+    transform: scale(1.05);
+}
+
+.btn-reset {
+    background: var(--danger-red);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-reset:hover {
+    background: var(--danger-hover);
+}
+
+/* === MODAL PERSONALIZZAZIONE === */
+.customization-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    position: relative;
+    background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+    border: 2px solid var(--success-green);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 255, 48, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--text-gray);
+}
+
+.modal-header h2 {
+    color: var(--text-white);
+    margin: 0;
+}
+
+.close-btn {
+    background: var(--danger-red);
+    color: white;
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: var(--danger-hover);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.customization-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--text-gray);
+}
+
+.tab-btn {
+    background: transparent;
+    color: var(--text-gray);
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active, .tab-btn:hover {
+    color: var(--success-green);
+    border-bottom-color: var(--success-green);
+}
+
+.weapon-slots-config {
+    display: grid;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.weapon-slot-config {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.weapon-slot-config label {
+    min-width: 60px;
+    color: var(--text-white);
+    font-weight: bold;
+}
+
+.weapon-slot-config select {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--text-gray);
+    color: var(--text-white);
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.weapon-preview {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.upgrades-list {
+    display: grid;
+    gap: 15px;
+}
+
+.upgrade-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid var(--success-green);
+}
+
+.upgrade-item label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text-white);
+    font-weight: bold;
+}
+
+.upgrade-item p {
+    margin: 5px 0 0 30px;
+    color: var(--text-gray);
+    font-size: 14px;
+}
+
+.color-section, .pattern-section {
+    margin: 15px 0;
+}
+
+.color-section label, .pattern-section label {
+    display: block;
+    color: var(--text-white);
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.color-section input[type="color"] {
+    width: 60px;
+    height: 40px;
+    border: 1px solid var(--text-gray);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.pattern-section select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--text-gray);
+    color: var(--text-white);
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    padding: 20px;
+    border-top: 1px solid var(--text-gray);
+}
+
+.btn-save {
+    background: var(--success-green);
+    color: black;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-save:hover {
+    background: var(--success-hover);
+    transform: scale(1.05);
+}
+
+.btn-cancel {
+    background: var(--danger-red);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    background: var(--danger-hover);
+}
+
+/* === MESSAGGI DI STATO === */
+.no-weapons-message, .no-upgrades-message {
+    text-align: center;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid var(--danger-red);
+}
+
+.no-weapons-message p, .no-upgrades-message p {
+    margin: 10px 0;
+}
+
+/* === ARMI POSSEDUTE === */
+.weapons-owned-info {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid var(--success-green);
+}
+
+.owned-weapons-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.owned-weapon-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.weapon-name {
+    font-weight: bold;
+    color: var(--text-white);
+}
+
+.weapon-damage {
+    color: var(--success-green);
+    font-size: 12px;
+}
+
+/* === ANTEPRIMA CONFIGURAZIONE === */
+.weapon-stats {
+    padding: 10px;
+    background: rgba(0, 255, 48, 0.1);
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.weapon-stats p {
+    margin: 5px 0;
+    color: var(--text-white);
+}
+
+.equipped-weapons-list {
+    display: grid;
+    gap: 5px;
+}
+
+.equipped-weapon {
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--text-gray);
+}
+
+/* === POTENZIAMENTI === */
+.upgrade-item.owned {
+    border-left-color: var(--success-green);
+    background: rgba(0, 255, 48, 0.05);
+}
+
+.upgrades-summary {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid var(--success-green);
+}
+
+#upgrades-effect-summary {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    min-height: 50px;
+}
+
+/* === EVIDENZIAZIONI === */
+.tank-customization-card.target-tank {
+    border-color: #ff6600;
+    background: linear-gradient(135deg, rgba(255, 102, 0, 0.2), rgba(255, 153, 0, 0.1));
+    box-shadow: 0 10px 30px rgba(255, 102, 0, 0.3);
+}
+
+.tank-customization-card.target-tank .tank-status-owned {
+    background: #ff6600;
+    animation: pulse-orange 2s infinite;
+}
+
+@keyframes pulse-orange {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+header, .shop-header {
+    height: auto;
+    width: 97%;
+    display: flex;
+    flex-direction: row;
+    padding: 1% 1%;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.nav-brand {
+    color: var(--text-white);
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-link {
+    color: var(--text-white);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 15px;
+    border: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    background-color: var(--button-hover);
+    text-decoration: underline;
+}
+
+.credits-container {
+    background-color: var(--text-white);
+    color: var(--bg-black);
+    border-radius: 15px;
+    padding: 8px 16px;
+    font-weight: bold;
+}
+
+.credits-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* === HERO SECTION (STILE LOBBY) === */
+.hero-section {
+    text-align: center;
+    padding: 2rem 1rem;
+    margin-top: 5%;
+}
+
+.shop-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--text-white);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+}
+
+.shop-subtitle {
+    font-size: 1rem;
+    color: var(--text-white);
+    margin-bottom: 2rem;
+}
+
+/* === SHOP CONTAINER (STILE LOBBY) === */
+.shop-container {
+    width: 90%;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+/* === SEZIONI (STILE LOBBY) === */
+.shop-section {
+    background-color: var(--bg-black);
+    border: solid var(--border-white) 2px;
+    margin-bottom: 3rem;
+    padding: 2rem;
+    position: relative;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.section-header h2 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--text-white);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+}
+
+.section-description {
+    color: var(--text-white);
+    font-size: 1rem;
+}
+
+/* === GRIGLIA OGGETTI (STILE LOBBY) === */
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 1rem 0;
+}
+
+.no-items {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-white);
+    font-size: 1.2rem;
+}
+
+/* === CARD OGGETTI (STILE LOBBY) === */
+.item-card {
+    background-color: var(--text-white);
+    border-radius: 25px;
+    padding: 1.5rem;
+    color: var(--bg-black);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.item-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+}
+
+.item-card.owned {
+    border: 2px solid var(--success-green);
+    background-color: rgba(0, 255, 48, 0.1);
+    color: var(--text-white);
+}
+
+.item-card.owned::before {
+    content: "✓ POSSEDUTO";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--success-green);
+    color: var(--text-white);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: bold;
+    border-radius: 5px;
+    z-index: 2;
+}
+
+/* === IMMAGINI (STILE LOBBY) === */
+.item-image {
+    height: 200px;
+    overflow: hidden;
+    border-radius: 15px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-black);
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.item-card:hover .item-image img {
+    transform: scale(1.05);
+}
+
+/* Badge gratuito */
+.free-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--success-green);
+    color: var(--text-white);
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: bold;
+    border-radius: 5px;
+    z-index: 2;
+}
+
+/* Badge tipo arma */
+.weapon-type-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.7rem;
+    font-weight: bold;
+    border-radius: 5px;
+    color: var(--text-white);
+    z-index: 2;
+    background: var(--danger-red);
+}
+
+/* === INFO CARD (STILE LOBBY) === */
+.item-info {
+    padding: 0;
+}
+
+.item-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: inherit;
+    margin-bottom: 0.5rem;
+}
+
+.item-description {
+    color: inherit;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+}
+
+/* === STATISTICHE (STILE LOBBY) === */
+.tank-stats, .weapon-stats {
+    margin: 1rem 0;
+}
+
+.stat-item, .stat-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.stat-row i {
+    width: 20px;
+    margin-right: 0.5rem;
+}
+
+/* === PULSANTI (STILE LOBBY) === */
+.btn {
+    padding: 8px 16px;
+    border-radius: 15px;
+    border: 0;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn:hover {
+    background-color: var(--button-hover);
+    text-decoration: underline;
+}
+
+.btn-buy {
+    background-color: var(--text-white);
+    color: var(--bg-black);
+}
+
+.btn-buy:hover {
+    background-color: var(--button-hover);
+    color: var(--text-white);
+}
+
+.btn-owned {
+    background-color: var(--success-green);
+    color: var(--text-white);
+    cursor: default;
+}
+
+.btn-owned:hover {
+    background-color: var(--success-hover);
+    text-decoration: none;
+}
+
+.btn-disabled {
+    background-color: var(--text-gray);
+    color: var(--text-white);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-disabled:hover {
+    background-color: var(--text-gray);
+    text-decoration: none;
+}
+
+/* === FOOTER CARD (STILE LOBBY) === */
+.item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.item-price {
+    font-size: 1rem;
+    font-weight: bold;
+    color: inherit;
+}
+
+/* === UPGRADE CARDS (STILE LOBBY) === */
+.upgrade-card .item-image {
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upgrade-card .item-image i {
+    font-size: 3rem;
+    color: var(--bg-black);
+}
+
+/* === LOADING (STILE LOBBY) === */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    text-align: center;
+    color: var(--text-white);
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    color: var(--text-white);
+    margin-bottom: 1rem;
+}
+
+.loading-spinner p {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* === NOTIFICHE (STILE LOBBY) === */
+.purchase-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--text-white);
+    color: var(--bg-black);
+    border: 2px solid var(--success-green);
+    border-radius: 15px;
+    padding: 1rem 1.5rem;
+    z-index: 10000;
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+}
+
+.purchase-notification.show {
+    transform: translateX(0);
+}
+
+.notification-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.notification-content i {
+    font-size: 2rem;
+    color: var(--success-green);
+    margin-bottom: 0.5rem;
+}
+
+.notification-content h4 {
+    color: var(--bg-black);
+    margin-bottom: 0.3rem;
+    font-weight: bold;
+}
+
+.notification-content small {
+    color: var(--text-gray);
+}
+
+/* === RESPONSIVE (STILE LOBBY) === */
+@media (max-width: 768px) {
+    .main-nav {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .nav-menu {
+        gap: 1rem;
+    }
+    
+    .shop-title {
+        font-size: 2rem;
+    }
+    
+    .items-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .purchase-notification {
+        right: 10px;
+        left: 10px;
+        transform: translateY(-100px);
+    }
+    
+    .purchase-notification.show {
+        transform: translateY(0);
+    }
+}

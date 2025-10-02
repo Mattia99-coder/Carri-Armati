@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalizzazione Carro Armato - Tank Game</title>
+    <link rel="stylesheet" href="css/customize-style.css">
+    <style>
+        /* CSS aggiuntivo per compatibilità - Il CSS principale è nel file customize-style.css */
+    </style>
+</head>
+<body class="customize-body">
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Caricamento Personalizzazione</h2>
+            <p>Preparando il tuo tank...</p>
+        </div>
+    </div>
+
+    <div class="customize-container">
+        <!-- Header -->
+        <div class="customize-header">
+            <div class="header-left">
+                <button class="back-btn" onclick="window.location.href='../lobby/index.html'">
+                    <span class="btn-icon">←</span>
+                    Torna alla Lobby
+                </button>
+                <h1>🚀 Personalizzazione Carro Armato</h1>
+            </div>
+            <button class="shop-btn" onclick="window.location.href='../shop/index.php'">
+                <span class="btn-icon">🛒</span>
+                Vai al Negozio
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="customize-content">
+            <!-- Tank Info Section -->
+            <div class="tank-info-section">
+                <div class="section-header">
+                    <h3>Il Tuo Carro Armato</h3>
+                    <p>Visualizza il tuo tank e le sue statistiche</p>
+                </div>
+                
+                <div class="tank-showcase">
+                    <div class="tank-preview">
+                        <img id="tank-img" class="tank-image" src="../images/carro_armato_1.png" alt="Tank">
+                    </div>
+                    
+                    <div class="tank-details">
+                        <h2 id="tank-name">Tank Personalizzabile</h2>
+                        <p class="tank-description">
+                            Equipaggia le tue armi migliori per dominare il campo di battaglia. 
+                            Ogni slot può ospitare un'arma diversa per strategie versatili.
+                        </p>
+                        
+                        <div class="tank-stats">
+                            <div class="stat">
+                                <span class="stat-label">Potenza</span>
+                                <span class="stat-value" id="tank-power">85</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Difesa</span>
+                                <span class="stat-value" id="tank-defense">72</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Velocità</span>
+                                <span class="stat-value" id="tank-speed">63</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Portata</span>
+                                <span class="stat-value" id="tank-range">90</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weapons Section -->
+            <div class="weapons-section">
+                <div class="section-header">
+                    <h3>⚔️ Configurazione Armi</h3>
+                    <p>Seleziona uno slot e scegli un'arma per equipaggiarla</p>
+                </div>
+
+                <!-- Weapon Slots -->
+                <div class="weapon-slots-container">
+                    <div class="weapon-slot" data-slot="1" onclick="selectSlot(1)">
+                        <div class="slot-header">
+                            <div class="slot-number">1</div>
+                            <div class="slot-info">
+                                <h4>Slot Primario</h4>
+                                <p>Arma principale del tank</p>
+                            </div>
+                        </div>
+                        <div class="slot-content">
+                            <div class="weapon-display">
+                                <div class="weapon-icon">🎯</div>
+                                <div class="weapon-info">
+                                    <span class="weapon-name" id="slot-1">Cannone Base</span>
+                                    <div class="weapon-stats">Potenza base garantita</div>
+                                </div>
+                            </div>
+                            <button class="change-weapon-btn" onclick="selectSlot(1)">Cambia</button>
+                        </div>
+                    </div>
+
+                    <div class="weapon-slot" data-slot="2" onclick="selectSlot(2)">
+                        <div class="slot-header">
+                            <div class="slot-number">2</div>
+                            <div class="slot-info">
+                                <h4>Slot Secondario</h4>
+                                <p>Arma di supporto</p>
+                            </div>
+                        </div>
+                        <div class="slot-content">
+                            <div class="weapon-display">
+                                <div class="weapon-icon">⚡</div>
+                                <div class="weapon-info">
+                                    <span class="weapon-name" id="slot-2">Vuoto</span>
+                                    <div class="weapon-stats">Nessuna arma equipaggiata</div>
+                                </div>
+                            </div>
+                            <button class="change-weapon-btn" onclick="selectSlot(2)">Equipaggia</button>
+                        </div>
+                    </div>
+
+                    <div class="weapon-slot" data-slot="3" onclick="selectSlot(3)">
+                        <div class="slot-header">
+                            <div class="slot-number">3</div>
+                            <div class="slot-info">
+                                <h4>Slot Speciale</h4>
+                                <p>Arma tattica</p>
+                            </div>
+                        </div>
+                        <div class="slot-content">
+                            <div class="weapon-display">
+                                <div class="weapon-icon">💥</div>
+                                <div class="weapon-info">
+                                    <span class="weapon-name" id="slot-3">Vuoto</span>
+                                    <div class="weapon-stats">Nessuna arma equipaggiata</div>
+                                </div>
+                            </div>
+                            <button class="change-weapon-btn" onclick="selectSlot(3)">Equipaggia</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weapon Selection Panel (Hidden by default) -->
+                <div class="weapon-selection-panel" id="weaponSelectionPanel" style="display: none;">
+                    <div class="selection-header">
+                        <h3>Seleziona Arma per Slot <span id="currentSlot">1</span></h3>
+                        <button class="close-selection-btn" onclick="closeWeaponSelection()">×</button>
+                    </div>
+
+                    <!-- Weapons Filter -->
+                    <div class="weapons-filter">
+                        <button class="filter-btn active" data-type="all">Tutte</button>
+                        <button class="filter-btn" data-type="primary">Primarie</button>
+                        <button class="filter-btn" data-type="secondary">Secondarie</button>
+                        <button class="filter-btn" data-type="special">Speciali</button>
+                    </div>
+
+                    <!-- Weapons Grid -->
+                    <div class="weapons-grid" id="weapons-list">
+                        <!-- Le armi saranno caricate dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions-section">
+            <div class="actions-container">
+                <button class="action-btn primary" onclick="saveTankConfiguration()">
+                    <span class="btn-icon">💾</span>
+                    Salva Configurazione
+                </button>
+                <a href="../lobby/index.html" class="action-btn secondary">
+                    <span class="btn-icon">🏠</span>
+                    Torna alla Lobby
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userToken = localStorage.getItem('userToken');
+        let currentTankId = 1;
+        let selectedSlot = 1;
+        let selectedWeapon = null;
+        let userWeapons = [];
+        let tankLoadout = {};
+
+        // Inizializzazione
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔑 Debug autenticazione:');
+            console.log('Token dal localStorage:', localStorage.getItem('userToken'));
+            
+            // Ricarica il token per sicurezza
+            userToken = localStorage.getItem('userToken');
+            
+            if (!userToken || userToken === 'null' || userToken === 'undefined' || userToken.trim() === '') {
+                console.log('❌ Token non valido, redirect al login');
+                alert('Devi essere autenticato!');
+                window.location.href = '../user/src/login.php';
+                return;
+            }
+            
+            console.log('✅ Token valido, procedo con l\'inizializzazione');
+            
+            // Ottieni tank ID dai parametri URL
+            const urlParams = new URLSearchParams(window.location.search);
+            currentTankId = urlParams.get('tank') || 1;
+            
+            initCustomization();
+        });
+
+        async function initCustomization() {
+            showLoadingScreen();
+            
+            await loadUserWeapons();
+            await loadTankLoadout();
+            renderWeapons();
+            updateTankPreview();
+            
+            hideLoadingScreen();
+        }
+
+        function showLoadingScreen() {
+            document.getElementById('loadingScreen').style.display = 'flex';
+        }
+
+        function hideLoadingScreen() {
+            document.getElementById('loadingScreen').style.display = 'none';
+        }
+
+        async function loadUserWeapons() {
+            try {
+                const response = await fetch(`../user/src/tank-customization.php/user-weapons?token=${userToken}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    userWeapons = data.weapons.filter(w => w.price === 0 || w.tank_id !== null);
+                }
+            } catch (error) {
+                console.error('Errore caricamento armi:', error);
+            }
+        }
+
+        async function loadTankLoadout() {
+            try {
+                const response = await fetch(`../user/src/tank-customization.php/tank-loadout?token=${userToken}&tank_id=${currentTankId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    tankLoadout = {};
+                    data.loadout.forEach(item => {
+                        tankLoadout[item.slot_position] = item;
+                    });
+                    updateWeaponSlots();
+                }
+            } catch (error) {
+                console.error('Errore caricamento configurazione:', error);
+            }
+        }
+
+        function selectSlot(slotNumber) {
+            selectedSlot = slotNumber;
+            document.getElementById('currentSlot').textContent = slotNumber;
+            
+            // Mostra il pannello di selezione armi
+            const panel = document.getElementById('weaponSelectionPanel');
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth' });
+            
+            // Aggiorna la visualizzazione degli slot
+            document.querySelectorAll('.weapon-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+            document.querySelector(`[data-slot="${slotNumber}"]`).classList.add('selected');
+        }
+
+        function closeWeaponSelection() {
+            document.getElementById('weaponSelectionPanel').style.display = 'none';
+            
+            // Rimuovi selezione dagli slot
+            document.querySelectorAll('.weapon-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+        }
+
+        function renderWeapons() {
+            const container = document.getElementById('weapons-list');
+            container.innerHTML = '';
+
+            if (userWeapons.length === 0) {
+                container.innerHTML = `
+                    <div class="no-weapons-message">
+                        <h3>Nessuna Arma Disponibile</h3>
+                        <p>Vai al negozio per acquistare nuove armi!</p>
+                        <button class="buy-btn" onclick="window.location.href='../shop/index.php'">
+                            🛒 Vai al Negozio
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            userWeapons.forEach(weapon => {
+                const isOwned = weapon.price === 0 || weapon.tank_id !== null;
+                const weaponCard = document.createElement('div');
+                weaponCard.className = `weapon-card ${isOwned ? 'owned' : 'not-owned'}`;
+                
+                weaponCard.innerHTML = `
+                    <div class="weapon-card-header">
+                        <div class="weapon-icon">${getWeaponIcon(weapon.name)}</div>
+                        <div class="weapon-owned-badge">${isOwned ? '✅' : '🔒'}</div>
+                    </div>
+                    <div class="weapon-title">${weapon.name}</div>
+                    <div class="weapon-description">${weapon.description || 'Arma potente per il combattimento'}</div>
+                    <div class="weapon-stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Danno</span>
+                            <span class="stat-value">${weapon.damage}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Portata</span>
+                            <span class="stat-value">${weapon.range_distance}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Ricarica</span>
+                            <span class="stat-value">${weapon.reload_time/1000}s</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Precisione</span>
+                            <span class="stat-value">${weapon.accuracy || 85}%</span>
+                        </div>
+                    </div>
+                    ${isOwned ? 
+                        `<button class="equip-btn" onclick="equipWeapon(${weapon.id})">Equipaggia</button>` :
+                        `<button class="buy-btn" onclick="window.location.href='../shop/index.php'">Acquista</button>`
+                    }
+                `;
+                
+                container.appendChild(weaponCard);
+            });
+        }
+
+        function getWeaponIcon(weaponName) {
+            const icons = {
+                'Cannone': '🎯',
+                'Mitragliatrice': '⚡',
+                'Mortaio': '💥',
+                'Laser': '✨',
+                'Missili': '🚀',
+                'Plasma': '🔥'
+            };
+            
+            for (let [key, icon] of Object.entries(icons)) {
+                if (weaponName.includes(key)) return icon;
+            }
+            return '⚔️';
+        }
+
+        async function equipWeapon(weaponId) {
+            if (!selectedSlot) {
+                alert('Seleziona prima uno slot!');
+                return;
+            }
+
+            const weapon = userWeapons.find(w => w.id === weaponId);
+            if (!weapon) {
+                alert('Arma non trovata!');
+                return;
+            }
+
+            try {
+                showLoadingScreen();
+                
+                const response = await fetch('../user/src/tank-customization.php/customize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: userToken,
+                        tank_id: currentTankId,
+                        weapon_id: weaponId,
+                        slot_position: selectedSlot
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    tankLoadout[selectedSlot] = weapon;
+                    updateWeaponSlots();
+                    closeWeaponSelection();
+                    
+                    // Mostra messaggio di successo
+                    showSuccessMessage('Arma equipaggiata con successo!');
+                } else {
+                    alert('Errore equipaggiamento: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Errore equipaggiamento:', error);
+                alert('Errore di connessione');
+            } finally {
+                hideLoadingScreen();
+            }
+        }
+
+        function updateWeaponSlots() {
+            for (let i = 1; i <= 3; i++) {
+                const slotNameElement = document.getElementById(`slot-${i}`);
+                const slotContainer = document.querySelector(`[data-slot="${i}"]`);
+                
+                if (tankLoadout[i]) {
+                    slotNameElement.textContent = tankLoadout[i].name;
+                    slotNameElement.classList.add('equipped');
+                    slotContainer.classList.add('equipped');
+                    
+                    // Aggiorna anche le statistiche nella visualizzazione
+                    const weaponInfo = slotContainer.querySelector('.weapon-stats');
+                    weaponInfo.textContent = `DMG: ${tankLoadout[i].damage} | RNG: ${tankLoadout[i].range_distance}`;
+                } else {
+                    slotNameElement.textContent = i === 1 ? 'Cannone Base' : 'Vuoto';
+                    slotNameElement.classList.remove('equipped');
+                    slotContainer.classList.remove('equipped');
+                    
+                    const weaponInfo = slotContainer.querySelector('.weapon-stats');
+                    weaponInfo.textContent = i === 1 ? 'Potenza base garantita' : 'Nessuna arma equipaggiata';
+                }
+            }
+        }
+
+        function updateTankPreview() {
+            document.getElementById('tank-name').textContent = `Tank Personalizzabile #${currentTankId}`;
+            
+            // Aggiorna le statistiche del tank in base alle armi equipaggiate
+            updateTankStats();
+        }
+
+        function updateTankStats() {
+            let totalPower = 50; // Base
+            let totalRange = 40;  // Base
+            
+            Object.values(tankLoadout).forEach(weapon => {
+                if (weapon) {
+                    totalPower += parseInt(weapon.damage) || 0;
+                    totalRange += parseInt(weapon.range_distance) || 0;
+                }
+            });
+            
+            document.getElementById('tank-power').textContent = Math.min(totalPower, 100);
+            document.getElementById('tank-range').textContent = Math.min(totalRange, 100);
+        }
+
+        function showSuccessMessage(message) {
+            // Crea e mostra un messaggio di successo temporaneo
+            const successDiv = document.createElement('div');
+            successDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #22c55e, #16a34a);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 10px;
+                z-index: 1001;
+                box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3);
+                font-weight: 600;
+            `;
+            successDiv.textContent = message;
+            
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+
+        async function saveTankConfiguration() {
+            showSuccessMessage('Configurazione salvata! Torna alla lobby per utilizzare il tank personalizzato.');
+            
+            setTimeout(() => {
+                window.location.href = '../lobby/index.html';
+            }, 1500);
+        }
+
+        // Filtri per le armi
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aggiungi event listeners per i filtri
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Rimuovi active da tutti
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    // Aggiungi active al clicked
+                    this.classList.add('active');
+                    
+                    const filterType = this.dataset.type;
+                    filterWeapons(filterType);
+                });
+            });
+        });
+
+        function filterWeapons(type) {
+            const weaponCards = document.querySelectorAll('.weapon-card');
+            
+            weaponCards.forEach(card => {
+                const weaponName = card.querySelector('.weapon-title').textContent.toLowerCase();
+                let show = true;
+                
+                if (type !== 'all') {
+                    switch(type) {
+                        case 'primary':
+                            show = weaponName.includes('cannone') || weaponName.includes('laser');
+                            break;
+                        case 'secondary':
+                            show = weaponName.includes('mitragliatrice') || weaponName.includes('gatling');
+                            break;
+                        case 'special':
+                            show = weaponName.includes('mortaio') || weaponName.includes('missile') || weaponName.includes('plasma');
+                            break;
+                    }
+                }
+                
+                card.style.display = show ? 'block' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>

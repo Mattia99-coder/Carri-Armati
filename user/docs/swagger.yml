@@ -1,0 +1,162 @@
+openapi: 3.0.3
+openapi: 3.0.3
+info:
+  title: User Management API
+  description: |
+    A RESTful API for user management following MVP architecture.
+    Implements full CRUD operations on user resource with JWT authentication.
+  version: 1.0.0
+  contact:
+    email: luca.veronelli@studenti.unipr.it
+
+servers:
+  - url: http://localhost:8080/user
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: User registration and login
+  - name: Users
+    description: User account management
+
+paths:
+  /users/register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URI of the created user
+        '400':
+          description: Missing required field(s)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormError'
+        '409':
+          description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        username:
+          type: string
+          example: "john_doe"
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-01-01T12:00:00Z"
+
+    UserRegistration:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+          example: "john_doe"
+        password:
+          type: string
+          minLength: 8
+          example: "securepassword123"
+        confirmPassword:
+          type: string
+          minLength: 8
+          example: "securepassword123"
+      required: [username, password, confirmPassword]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    Error:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+          example: "Invalid credentials"
+
+    FormError:
+      type: object
+      properties:
+          errorMessage:
+            type: string
+          details:
+            type: array
+            items:
+              type: string
+              enum:
+                - "Username"
+                - "Password"
+                - "Confirm password"
+
+    ValidationError:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+            enum:
+              - "Username must be between 3 and 30 characters"
+              - "Password must be at least 8 characters"
+              - "Passwords do not match"
+
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: ID of the user
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token authentication
+
+security:
+  - bearerAuth: []

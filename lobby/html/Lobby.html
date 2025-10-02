@@ -1,0 +1,106 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Lobby</title>
+        <link rel="stylesheet" href="../css/lobby-style.css">
+    </head>
+    <body>
+        <header>
+            <button id="map_button">Gioca ora</button>
+            <button id="unisciti_button">Unisciti ad una partita</button>
+            <button id="logout-btn">Logout</button>
+            <nav class="amici">
+                <ul class="menu">
+                    <li class="menu-item dropdown">
+                        <img src="../../images/menu_icon.png"><span>Menu</span>
+                        <ul class="dropdown-menu">
+                            <a href="../../account/html/Account.html"><li class="item">Il mio account</li></a>
+                            <a href="../../shop/html/Negozio.html"><li class="item">Negozio</li></a>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+        <div class="lista-mappe" id="lista-mappe">
+            <div class="mappe">
+                <p>
+                    Scegli una mappa
+                </p>
+                <table cellpadding="3" cellspacing="0">
+                    <tr><td><img src="../../images/campagna.jpg" alt="Campagna" class="map-image"></td><td><img src="../../images/deserto.jpg" alt="Deserto" class="map-image"></td><td><img src="../../images/giungla.jpg" alt="Giungla" class="map-image"></td><td><img src="../../images/prateria.jpg" alt="Prateria" class="map-image"></td><td><img src="../../images/japan.jpg" alt="Giappone" class="map-image"></td></tr>
+                    <tr><td><img src="../../images/forest.jpg" alt="Foresta" class="map-image"></td><td><img src="../../images/ghiacci.jpg" alt="Montagne" class="map-image"></td><td><img src="../../images/island.jpg" alt="Isola Deserta" class="map-image"></td><td><img src="../../images/alaska.jpg" alt="Alaska" class="map-image"></td><td><img src="../../images/india.jpg" alt="India" class="map-image"></td></tr>
+                </table>
+                <p id="nome-mappa"></p>
+                <div class="pulsanti-mappe">
+                    <button class="select-map">Seleziona mappa</button>
+                    <button class="my-maps" id="my-maps-button">Le mie mappe</button>
+                </div>
+            </div>
+            <img src="../../images/close.png" class="close_icon" id="chiudi_mappe_button">
+        </div>
+        <div class="mie-mappe" id="mie-mappe">
+            <div class="maps">
+                <p>
+                    Scegli una mappa
+                </p>
+                <table cellpadding="3" cellspacing="0">
+                    <tr><td>Non ci sono mappe disponibili al momento</td></tr>
+                </table>
+                <div class="pulsanti-mappe">
+                    <button class="select-map">Seleziona mappa</button>
+                    <button class="my-maps">Crea nuova mappa</button>
+                    <button class="delete-map">Elimina mappa</button>
+                    <button class="random-map">Genera mappa casualmente</button>
+                </div>
+            </div>
+            <img src="../../images/back_icon.png" class="back_icon" id="back_button">
+            <img src="../../images/close.png" class="close_icon" id="chiudi_mie_mappe_button">
+        </div>
+        <div class="partita" id="partita">
+            <div class="unisciti">
+                <p>
+                    Unisciti ad una partita in corso
+                </p>
+                <table cellpadding="3" cellspacing="0">
+                    <tr><td>Non ci sono partite al momento</td></tr>
+                </table>
+            </div>
+            <img src="../../images/close.png" class="close_icon" id="chiudi_button">
+        </div>
+        <div class="lista-amici" id="lista_amici">
+            <div class="invita">
+                <p>
+                    Invita un amico a giocare
+                </p>
+                <input type="text" id="search" placeholder="Cerca un amico...">
+                <button class="search-button">Cerca</button>
+                <table cellpadding="3" cellspacing="0">
+                    <tr><td>Non hai amici</td></tr>
+                </table>
+            </div>
+            <img src="../../images/close.png" class="close_icon" id="chiudi_amici_button">
+        </div>
+        <div class="hero" id="hero">
+            <div class="user">
+                <img class="user-tank" src="../../images/plus-icon.svg"> 
+                <button class="invita_button">Invita</button> 
+            </div>
+            <div class="user">
+                <img class="user-tank" src="../../images/plus-icon.svg">  
+                <button class="invita_button">Invita</button> 
+            </div>
+            <div class="giocatore">
+                <img class="giocatore-tank" src="../../images/carro_armato_1.png">
+                <p>Giocatore 1</p>
+            </div>
+            <div class="user">
+                   <img class="user-tank" src="../../images/plus-icon.svg">
+                   <button class="invita_button">Invita</button> 
+            </div>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="../js/Lobby.js"></script>
+        <script src="../js/logout.js"></script>
+    </body>
+</html>

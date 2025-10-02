@@ -1,0 +1,250 @@
+<!DOCTYPE HTML>
+<html>
+    <head>    
+        <title>🛒 Tank Game - Negozio</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="../css/negozio-style.css">
+        <style>
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 0; 
+                background: linear-gradient(135deg, #2c3e50, #34495e); 
+                color: white; 
+                min-height: 100vh;
+            }
+            .header {
+                background: rgba(0,0,0,0.3);
+                padding: 20px;
+                text-align: center;
+                border-bottom: 2px solid #3498db;
+            }
+            .user-info {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+            .nav-buttons {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+                margin: 20px 0;
+            }
+            .nav-btn {
+                background: #3498db;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+                transition: background 0.3s;
+                text-decoration: none;
+                display: inline-block;
+            }
+            .nav-btn:hover { 
+                background: #2980b9; 
+            }
+            .nav-btn.special { 
+                background: #e74c3c; 
+            }
+            .nav-btn.special:hover { 
+                background: #c0392b; 
+            }
+            .shop-container {
+                background: rgba(0,0,0,0.3);
+                margin: 20px;
+                padding: 20px;
+                border-radius: 10px;
+            }
+            .shop-section {
+                background: rgba(0,0,0,0.2);
+                margin: 20px 0;
+                padding: 20px;
+                border-radius: 10px;
+            }
+            .section-header h2 {
+                color: #3498db;
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
+            .section-description {
+                color: #bdc3c7;
+                margin-bottom: 20px;
+            }
+            .items-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+            .item-card {
+                background: rgba(255,255,255,0.1);
+                border-radius: 8px;
+                padding: 15px;
+                transition: all 0.3s;
+                cursor: pointer;
+            }
+            .item-card:hover {
+                transform: scale(1.05);
+                background: rgba(255,255,255,0.2);
+            }
+            .item-image {
+                height: 150px;
+                overflow: hidden;
+                border-radius: 5px;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(0,0,0,0.3);
+            }
+            .item-image img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                image-rendering: pixelated;
+            }
+            .item-title {
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                color: white;
+            }
+            .item-description {
+                color: #bdc3c7;
+                font-size: 14px;
+                margin-bottom: 15px;
+                line-height: 1.4;
+            }
+            .item-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .item-price {
+                font-weight: bold;
+                color: #f39c12;
+            }
+            .btn {
+                background: #27ae60;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.3s;
+            }
+            .btn:hover {
+                background: #229954;
+                transform: scale(1.05);
+            }
+            .btn-owned {
+                background: #95a5a6;
+                cursor: default;
+            }
+            .btn-disabled {
+                background: #7f8c8d;
+                cursor: not-allowed;
+                transform: none;
+            }
+            .loading-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+            }
+            .loading-spinner {
+                text-align: center;
+                color: white;
+            }
+            .credits-display {
+                background: rgba(52, 152, 219, 0.2);
+                padding: 10px 15px;
+                border-radius: 5px;
+                border: 1px solid #3498db;
+            }
+            .purchase-notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(0,0,0,0.8);
+                padding: 15px;
+                border-radius: 8px;
+                color: white;
+                z-index: 10000;
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+            }
+            .purchase-notification.show {
+                transform: translateX(0);
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Header coerente con la lobby -->
+        <div class="header">
+            <div class="user-info">
+                <div>🛒 Tank Game - Negozio</div>
+                <div class="credits-display">
+                    <span id="user-credits">Crediti: 0</span>
+                </div>
+                <a href="../../lobby/index.html" class="nav-btn">← Torna alla Lobby</a>
+            </div>
+            <h1>🛒 NEGOZIO MILITARE</h1>
+            <p>Equipaggia il tuo carro armato per dominare il campo di battaglia</p>
+        </div>
+        <!-- Contenitore principale del negozio -->
+        <div class="shop-container">
+            <!-- Sezione Tank -->
+            <section class="shop-section">
+                <div class="section-header">
+                    <h2>🚗 CARRI ARMATI</h2>
+                    <div class="section-description">Scegli il tuo veicolo da combattimento</div>
+                </div>
+                <div class="items-grid" id="tanks-grid">
+                    <!-- I tank verranno caricati dinamicamente dal database -->
+                </div>
+            </section>
+
+            <!-- Sezione Armi -->
+            <section class="shop-section">
+                <div class="section-header">
+                    <h2>🎯 ARSENALE</h2>
+                    <div class="section-description">Potenzia il tuo armamento con nuove armi</div>
+                </div>
+                <div class="items-grid" id="weapons-grid">
+                    <!-- Le armi verranno caricate dinamicamente dal database -->
+                </div>
+            </section>
+
+            <!-- Sezione Potenziamenti -->
+            <section class="shop-section">
+                <div class="section-header">
+                    <h2>⚙️ MIGLIORAMENTI</h2>
+                    <div class="section-description">Upgrades permanenti per le tue performance</div>
+                </div>
+                <div class="items-grid" id="upgrades-grid">
+                    <!-- I potenziamenti verranno caricati dinamicamente -->
+                </div>
+            </section>
+        </div>
+        
+        <!-- Loading overlay -->
+        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner">
+                <div style="font-size: 48px; margin-bottom: 20px;">🔄</div>
+                <p>Caricamento armeria...</p>
+            </div>
+        </div>
+        
+        <script src="../js/Negozio.js"></script>
+    </body>
+</html>

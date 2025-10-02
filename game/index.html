@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <link rel="icon" href="data:,">
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    #wrapper {
+      padding: 20px;
+      border: 4px solid red;
+      box-sizing: border-box;
+    }
+    canvas {
+      image-rendering: pixelated;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrapper">
+    <canvas id="c"></canvas>
+  </div>
+  
+  <!-- Include JavaScript libraries -->
+  <script src="simplex-noise.js?v=2"></script>
+  <script src="tiles.js?v=2"></script>
+  
+  <script>
+    console.log('→ Game script iniziato');
+    const params = new URLSearchParams(window.location.search);
+    let mapId = parseInt(params.get('id'), 10) || 1; // Default mappa 1
+    let tankId = parseInt(params.get('tank'), 10) || 1; // Default tank 1
+    const matchId = params.get('match'); // Per modalità multiplayer
+
+    console.log('→ Parametri URL:', { mapId, tankId, matchId });
+
+    // Determina modalità di gioco
+    const isMultiplayer = !!matchId;
+    console.log('→ Modalità:', isMultiplayer ? 'Multiplayer' : 'Single Player');
+
+    // Validazione con fallback
+    if (!tankId || isNaN(tankId)) {
+      console.warn('⚠️ Tank ID non valido, usando default: 1');
+      tankId = 1;
+    }
+
+    if (!isMultiplayer && (!mapId || isNaN(mapId))) {
+      console.warn('⚠️ Map ID non valido, usando default: 1'); 
+      mapId = 1;
+    }
+
+    // Variabili di gioco per tracking statistiche
+    let gameStats = {
+      startTime: Date.now(),
+      kills: 0,
+      deaths: 0,
+      score: 0,
+      isMultiplayer: isMultiplayer,
+      matchId: matchId
+    };
+
+    // Token per autenticazione
+    const token = localStorage.getItem('userToken');
+    console.log('🔑 Token all\'inizio del gioco:', token ? 'Presente' : 'NON PRESENTE');
+    
+    // Test validità token se presente
+    if (token) {
+      fetch(`/user/src/records.php/records/user?token=${token}`)
+        .then(r => r.json())
+        .then(data => {
+          console.log('✅ Token valido - Utente:', data.username);
+        })
+        .catch(e => {
+          console.warn('⚠️ Token potrebbe essere scaduto:', e);
+        });
+    }
+
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    let zoom = 1;
+    let engine;
+    let tankImg = new Image();
+    
+    // Debug caricamento immagine tank
+    tankImg.onload = function() {
+      console.log('→ Immagine tank caricata con successo:', tankImg.src);
+      console.log('→ Dimensioni immagine tank:', tankImg.width, 'x', tankImg.height);
+      draw(); // Ridisegna quando l'immagine è caricata
+    };
+    tankImg.onerror = function() {
+      console.error('→ Errore caricamento immagine tank:', tankImg.src);
+      // Prova percorso alternativo
+      if (tankImg.src.includes('/maps/assets/tanks/')) {
+        console.log('→ Tentando percorso alternativo...');
+        tankImg.src = `/images/carro_armato_1.png`;
+      }
+    };
+    
+    // Gestione corretta dei nomi file
+    let tankFileName;
+    if (tankId >= 11) {
+      tankFileName = `tank${tankId}.png`;
+    } else {
+      tankFileName = `${tankId}.png`;
+    }
+    
+    tankImg.src = `/maps/assets/tanks/${tankFileName}`;
+    console.log('→ Tentativo caricamento immagine:', tankImg.src);
+
+    const camera = { x: 0, y: 0 };
+    const tank = { x: 0, y: 0, width: 32, height: 32 };
+
+    function resize() {
+      canvas.width = 800;
+      canvas.height = 600;
+      ctx.imageSmoothingEnabled = false;
+      draw();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    console.log('→ Iniziando caricamento mappa...');
+    
+    if (isMultiplayer) {
+      // Per multiplayer, ottieni la mappa dalla partita
+      loadMultiplayerGame();
+    } else {
+      // Per single player, carica normalmente
+      loadSinglePlayerMap();
+    }
+    
+    function loadSinglePlayerMap() {
+      fetch(`/maps/api.php?endpoint=maps/generate&id=${mapId}`)
+        .then(r => {
+          console.log('→ Risposta fetch ricevuta:', r.status);
+          return r.json();
+        })
+        .then(data => {
+          console.log('→ Dati mappa ricevuti:', data);
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          init(data);
+        })
+        .catch(e => {
+          console.error('→ Errore fetch:', e);
+          alert('Errore: ' + e.message);
+        });
+    }
+    
+    function loadMultiplayerGame() {
+      // Simula caricamento partita multiplayer
+      console.log('→ Caricamento partita multiplayer:', matchId);
+      
+      // Per ora usa mappa di default, in futuro sarà ottenuta dalla partita
+      const defaultMapId = 1;
+      fetch(`/maps/api.php?endpoint=maps/generate&id=${defaultMapId}`)
+        .then(r => r.json())
+        .then(data => {
+          console.log('→ Dati mappa multiplayer ricevuti:', data);
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          data.isMultiplayer = true;
+          init(data);
+          
+          // Avvia sistema multiplayer
+          if (token) {
+            startMultiplayerSync();
+          }
+        })
+        .catch(e => {
+          console.error('→ Errore caricamento multiplayer:', e);
+          alert('Errore caricamento partita multiplayer: ' + e.message);
+        });
+    }
+
+    function init(data) {
+      console.log('→ Dati ricevuti:', data);
+      
+      // Trasforma i biomi dal database nel formato che si aspetta il motore
+      const terrainTypes = [];
+      if (data.biomes && data.biomes.length > 0) {
+        data.biomes.forEach(biome => {
+          if (biome.terrain_types && biome.terrain_types.length > 0) {
+            biome.terrain_types.forEach(terrain => {
+              terrainTypes.push({
+                color: terrain.color,
+                texture_pattern: terrain.texture_pattern || terrain.type,
+                type: terrain.type
+              });
+            });
+          }
+        });
+      }
+      
+      // Fallback se non ci sono terrain_types
+      if (terrainTypes.length === 0) {
+        console.warn('→ Nessun terrain_type trovato, uso colori di default');
+        terrainTypes.push(
+          { color: '#228B22', texture_pattern: 'grass', type: 'grass' },
+          { color: '#8FBC8F', texture_pattern: 'dirt', type: 'dirt' },
+          { color: '#654321', texture_pattern: 'rock', type: 'rock' }
+        );
+      }
+      
+      console.log('→ Terrain types processati:', terrainTypes);
+      
+      engine = createTileEngine(data.seed, terrainTypes);
+
+      const { TILE_SIZE, CHUNK_SIZE } = engine;
+      console.log('→ Engine inizializzato:', { TILE_SIZE, CHUNK_SIZE });
+
+      // Inizializza il gioco con nemici e ostacoli
+      initGame();
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      tank.x = Math.floor((canvas.width / 2 / zoom) / TILE_SIZE) * TILE_SIZE;
+      tank.y = Math.floor((canvas.height / 2 / zoom) / TILE_SIZE) * TILE_SIZE;
+
+      updateCamera();
+      draw();
+
+      canvas.addEventListener('wheel', onWheel);
+      document.addEventListener('keydown', onKey);
+      
+      // Setup UI
+      showGameUI(isMultiplayer ? 'Multiplayer' : 'Single Player', '#4CAF50');
+      updateGameUI();
+      
+      console.log('→ Gioco inizializzato completamente');
+    }
+    
+    // Mostra UI di gioco
+    function showGameUI(mode, color) {
+      const ui = document.createElement('div');
+      ui.id = 'game-ui';
+      ui.style.cssText = `
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: Arial, sans-serif;
+        z-index: 1000;
+        border-left: 4px solid ${color};
+      `;
+      ui.innerHTML = `
+        <div style="font-size: 18px; margin-bottom: 10px;">${mode}</div>
+        <div>Score: <span id="score-display">0</span></div>
+        <div>Kills: <span id="kills-display">0</span></div>
+        <div style="margin-top: 10px; font-size: 12px;">
+          Frecce: Movimento | Spazio: Spara | ESC: Termina partita
+        </div>
+      `;
+      document.body.appendChild(ui);
+    }
+    
+    // Aggiorna UI
+    function updateGameUI() {
+      const scoreEl = document.getElementById('score-display');
+      const killsEl = document.getElementById('kills-display');
+      if (scoreEl) scoreEl.textContent = gameStats.score;
+      if (killsEl) killsEl.textContent = gameStats.kills;
+    }
+
+    function updateCamera() {
+      camera.x = tank.x - (canvas.width / 2 / zoom) + tank.width / 2;
+      camera.y = tank.y - (canvas.height / 2 / zoom) + tank.height / 2;
+    }
+
+    function onKey(e) {
+      const move = 32; // grandezza di una tile
+      let moved = false;
+      
+      if (e.key === 'ArrowRight') { tank.x += move; moved = true; }
+      if (e.key === 'ArrowLeft')  { tank.x -= move; moved = true; }
+      if (e.key === 'ArrowUp')    { tank.y -= move; moved = true; }
+      if (e.key === 'ArrowDown')  { tank.y += move; moved = true; }
+      
+      // Sparo e punteggio
+      if (e.key === ' ') { // Spazio per sparare
+        // Crea proiettile player
+        const bullet = {
+          x: tank.x + tank.width/2,
+          y: tank.y + tank.height/2,
+          vx: 0, // Direzione basata su ultimo movimento (semplificato)
+          vy: -400, // Spara verso l'alto per default
+          damage: 100,
+          isEnemyBullet: false,
+          lifetime: 2000
+        };
+        bullets.push(bullet);
+        
+        gameStats.score += 10;
+        console.log('→ Player spara! Score:', gameStats.score);
+        updateGameUI();
+        
+        // Se multiplayer, sincronizza azione
+        if (isMultiplayer && token) {
+          syncAction('shoot', { x: tank.x, y: tank.y });
+        }
+      }
+      
+      // ESC per terminare partita
+      if (e.key === 'Escape') {
+        if (confirm('Vuoi terminare la partita?')) {
+          endGame();
+        }
+      }
+      
+      if (moved) {
+        updateCamera();
+        draw();
+        
+        // Se multiplayer, sincronizza movimento
+        if (isMultiplayer && token) {
+          syncAction('move', { x: tank.x, y: tank.y });
+        }
+      }
+    }
+    
+    // Sistema multiplayer - sincronizzazione azioni
+    function startMultiplayerSync() {
+      console.log('🔄 Avvio sincronizzazione multiplayer');
+      // Questo potrebbe essere implementato con WebSocket o polling
+      // Per ora è un placeholder
+    }
+    
+    function syncAction(action, data) {
+      // Placeholder per sincronizzazione azioni multiplayer
+      console.log('🔄 Sync action:', action, data);
+      // In futuro: invio al server delle azioni del giocatore
+    }
+
+    function onWheel(e) {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      zoom = Math.max(0.5, Math.min(2, zoom + delta));
+      updateCamera();
+      draw();
+    }
+
+    function draw() {
+      console.log('🎮 DRAW() - Gioco completo attivo');
+      
+      if (!engine) {
+        console.log('❌ Engine non disponibile');
+        return;
+      }
+      
+      const getChunk = engine.getChunk;
+      const TILE_SIZE = engine.TILE_SIZE;
+      const CHUNK_SIZE = engine.CHUNK_SIZE;
+
+      // Reset e setup trasformazioni
+      ctx.resetTransform();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(zoom, zoom);
+      ctx.translate(-camera.x, -camera.y);
+
+      // Calcola area visibile
+      const viewW = canvas.width / (TILE_SIZE * zoom);
+      const viewH = canvas.height / (TILE_SIZE * zoom);
+      const tilesW = viewW / CHUNK_SIZE;
+      const tilesH = viewH / CHUNK_SIZE;
+      const cx0 = Math.floor(camera.x / TILE_SIZE / CHUNK_SIZE);
+      const cy0 = Math.floor(camera.y / TILE_SIZE / CHUNK_SIZE);
+
+      // Conta chunk caricati per sincronizzazione
+      let totalChunks = 0;
+      let loadedChunks = 0;
+
+      // 1. DISEGNA TERRENO (chunk asincroni)
+      for (let dx = -1; dx <= 1 + tilesW; dx++) {
+        for (let dy = -1; dy <= 1 + tilesH; dy++) {
+          totalChunks++;
+          const cx = cx0 + dx;
+          const cy = cy0 + dy;
+          
+          getChunk(cx, cy).then(function(bmp) {
+            // Ripristina trasformazioni per ogni chunk
+            ctx.resetTransform();
+            ctx.scale(zoom, zoom);
+            ctx.translate(-camera.x, -camera.y);
+            
+            // Disegna chunk del terreno
+            ctx.drawImage(bmp, cx * CHUNK_SIZE * TILE_SIZE, cy * CHUNK_SIZE * TILE_SIZE);
+            
+            loadedChunks++;
+            
+            // Quando tutti i chunk sono caricati, disegna gli oggetti sopra
+            if (loadedChunks === totalChunks) {
+              drawAllGameObjects();
+            }
+          }).catch(() => {
+            // Se un chunk fallisce, conta comunque
+            loadedChunks++;
+            if (loadedChunks === totalChunks) {
+              drawAllGameObjects();
+            }
+          });
+        }
+      }
+      
+      // Fallback: se non ci sono chunk, disegna subito gli oggetti
+      if (totalChunks === 0) {
+        drawAllGameObjects();
+      }
+      
+      console.log('✅ Draw() completata, chunk totali:', totalChunks);
+    }
+    
+    // Disegna tutti gli oggetti del gioco sopra il terreno
+    function drawAllGameObjects() {
+      console.log('🎯 Disegno tutti gli oggetti del gioco...');
+      
+      // Assicura trasformazioni corrette
+      ctx.resetTransform();
+      ctx.scale(zoom, zoom);
+      ctx.translate(-camera.x, -camera.y);
+      
+      // 2. OSTACOLI (sotto i nemici)
+      drawObstacles();
+      
+      // 3. NEMICI
+      drawEnemies();
+      
+      // 4. PROIETTILI
+      drawBullets();
+      
+      // 5. TANK DEL PLAYER (sopra tutto)
+      if (tankImg && tankImg.complete && tankImg.width > 0) {
+        ctx.drawImage(tankImg, tank.x, tank.y, tank.width, tank.height);
+      } else {
+        // Fallback: rettangolo blu per il tank
+        ctx.fillStyle = '#0066FF';
+        ctx.fillRect(tank.x, tank.y, tank.width, tank.height);
+      }
+      
+      console.log('✅ Tutti gli oggetti disegnati - Nemici:', enemies.length, 'Ostacoli:', obstacles.length);
+    }
+
+    // Funzione separata per disegnare tutti gli oggetti del gioco sopra il terreno
+    function drawGameObjects() {
+      console.log('🎯 Disegno oggetti del gioco...');
+      
+      // Assicurati che le trasformazioni siano corrette
+      ctx.resetTransform();
+      ctx.scale(zoom, zoom);
+      ctx.translate(-camera.x, -camera.y);
+      
+      // Disegna ostacoli
+      drawObstacles();
+      
+      // Disegna nemici
+      drawEnemies();
+      
+      // Disegna proiettili
+      drawBullets();
+      
+      // Tank del player (sopra tutto)
+      if (tankImg && tankImg.complete && tankImg.width > 0) {
+        ctx.drawImage(tankImg, tank.x, tank.y, tank.width, tank.height);
+      } else {
+        // Fallback: disegna rettangolo blu per il tank
+        ctx.fillStyle = '#0066FF';
+        ctx.fillRect(tank.x, tank.y, tank.width, tank.height);
+      }
+      
+      console.log('✅ Oggetti disegnati!');
+    }
+      console.log('� DRAW() CHIAMATA!');
+      
+      if (!engine) {
+        console.log('❌ Engine non disponibile, esco da draw()');
+        // return; <- RIMOSSO return illegale
+      }
+      
+      // const getChunk = engine.getChunk; <- RIMOSSA chiamata orfana
+      // const TILE_SIZE = engine.TILE_SIZE; <- RIMOSSA dichiarazione duplicata
+      // const CHUNK_SIZE = engine.CHUNK_SIZE; <- RIMOSSA dichiarazione duplicata
+
+      // Reset completo e setup della trasformazione
+      /*
+      ctx.resetTransform();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(zoom, zoom);
+      ctx.translate(-camera.x, -camera.y);
+      */
+      /*
+      const viewW = canvas.width / (TILE_SIZE * zoom);
+      const viewH = canvas.height / (TILE_SIZE * zoom);
+      const tilesW = viewW / CHUNK_SIZE;
+      const tilesH = viewH / CHUNK_SIZE;
+      const cx0 = Math.floor(camera.x / TILE_SIZE / CHUNK_SIZE);
+      const cy0 = Math.floor(camera.y / TILE_SIZE / CHUNK_SIZE);
+
+      console.log('🎮 DEBUG - Nemici:', enemies.length, 'Ostacoli:', obstacles.length);
+      */
+
+      // 1. DISEGNA I CHUNK DEL TERRENO
+      /*
+      for (let dx = -1; dx <= 1 + tilesW; dx++) {
+        for (let dy = -1; dy <= 1 + tilesH; dy++) {
+          const cx = cx0 + dx;
+          const cy = cy0 + dy;
+          getChunk(cx, cy).then(function(bmp) {
+            ctx.resetTransform();
+            ctx.scale(zoom, zoom);
+            ctx.translate(-camera.x, -camera.y);
+            ctx.drawImage(bmp, cx * CHUNK_SIZE * TILE_SIZE, cy * CHUNK_SIZE * TILE_SIZE);
+          });
+        }
+      }
+      */
+      
+      /*
+      // 2. DISEGNA GLI OGGETTI DOPO UN BREVE TIMEOUT (per dare tempo ai chunk di caricarsi)
+      setTimeout(() => {
+        drawGameObjects();
+      }, 50); // 50ms dovrebbero bastare
+      
+      console.log('✅ Draw() completata!');
+      */
+    
+    // Funzione per disegnare tutti gli oggetti del gioco sopra il terreno
+    function drawGameObjects() {
+      console.log('🎯 Disegno oggetti del gioco...');
+      
+      // Assicurati che le trasformazioni siano corrette
+      ctx.resetTransform();
+      ctx.scale(zoom, zoom);
+      ctx.translate(-camera.x, -camera.y);
+      
+      // Disegna ostacoli
+      drawObstacles();
+      
+      // Disegna nemici
+      drawEnemies();
+      
+      // Disegna proiettili
+      drawBullets();
+      
+      // Tank del player (sopra tutto)
+      if (tankImg && tankImg.complete && tankImg.width > 0) {
+        ctx.drawImage(tankImg, tank.x, tank.y, tank.width, tank.height);
+      } else {
+        // Fallback: disegna rettangolo blu per il tank
+        ctx.fillStyle = '#0066FF';
+        ctx.fillRect(tank.x, tank.y, tank.width, tank.height);
+      }
+      
+      // TEST: Elementi di debug per vedere se funziona
+      ctx.fillStyle = '#00FFFF'; // Ciano
+      ctx.fillRect(tank.x - 50, tank.y - 50, 15, 15);
+      
+      ctx.fillStyle = '#FFFF00'; // Giallo
+      ctx.fillRect(tank.x + 10, tank.y + 10, 8, 8);
+      
+      console.log('✅ Oggetti disegnati!');
+    }
+    
+    // Funzione per disegnare tutti gli oggetti del gioco sopra il terreno
+    function drawGameObjects() {
+      console.log('🎯 Disegno oggetti del gioco...');
+      
+      // Assicurati che le trasformazioni siano corrette
+      ctx.resetTransform();
+      ctx.scale(zoom, zoom);
+      ctx.translate(-camera.x, -camera.y);
+      
+      console.log('👹 Disegno ostacoli...');
+      drawObstacles();
+      
+      console.log('👹 Disegno nemici...');
+      drawEnemies();
+      
+      console.log('💥 Disegno proiettili...');
+      drawBullets();
+      
+      console.log('🚗 Disegno tank...');
+      // Tank del player (sopra tutto)
+      if (tankImg && tankImg.complete && tankImg.width > 0) {
+        ctx.drawImage(tankImg, tank.x, tank.y, tank.width, tank.height);
+      } else {
+        // Fallback: disegna rettangolo blu per il tank
+        ctx.fillStyle = '#0066FF';
+        ctx.fillRect(tank.x, tank.y, tank.width, tank.height);
+      }
+      
+      // DEBUG: Elementi di test
+      ctx.fillStyle = '#00FFFF'; // Ciano
+      ctx.fillRect(tank.x - 100, tank.y - 100, 20, 20);
+      
+      ctx.fillStyle = '#FFFF00'; // Giallo
+      ctx.fillRect(tank.x, tank.y, 10, 10);
+      
+      console.log('✅ Oggetti disegnati!');
+    }
+    
+    // Funzione per terminare la partita e salvare i risultati
+    function endGame() {
+      const duration = Math.floor((Date.now() - gameStats.startTime) / 1000);
+      const token = localStorage.getItem('userToken');
+      
+      console.log('🎮 END GAME CHIAMATA!');
+      console.log('📊 Stats attuali:', gameStats);
+      console.log('🔑 Token:', token ? 'Presente' : 'NON PRESENTE');
+      
+      if (!token) {
+        alert('Partita terminata! Score: ' + gameStats.score);
+        window.location.href = '../lobby/index.html';
+        return;
+      }
+      
+      console.log('→ Salvando risultati partita...');
+      console.log('📤 Dati da inviare:', {
+        token: token,
+        score: gameStats.score,
+        kills: gameStats.kills,
+        deaths: gameStats.deaths,
+        duration: duration,
+        map_id: mapId,
+        tank_id: tankId
+      });
+      
+      // Verifica che i dati siano validi
+      if (isNaN(mapId) || isNaN(tankId)) {
+        console.error('❌ mapId o tankId non validi:', { mapId, tankId });
+        alert(`Errore parametri: mapId=${mapId}, tankId=${tankId}`);
+        return;
+      }
+      
+      fetch('/user/src/records.php/records/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token,
+          score: gameStats.score,
+          kills: gameStats.kills,
+          deaths: gameStats.deaths,
+          duration: duration,
+          map_id: mapId,
+          tank_id: tankId
+        })
+      })
+      .then(response => {
+        console.log('📡 Risposta server ricevuta:', response.status);
+        return response.json();
+      })
+      .then(data => {
+        console.log('📋 Dati risposta:', data);
+        if (data.success) {
+          let message = `Partita terminata!\nScore: ${gameStats.score}\nKills: ${gameStats.kills}\nDurata: ${duration}s`;
+          if (data.new_level) {
+            message += `\n🎉 LEVEL UP! Nuovo livello: ${data.new_level}`;
+          }
+          alert(message);
+          console.log('✅ Dati salvati con successo!');
+        } else {
+          console.error('❌ Errore dal server:', data);
+          alert('Partita terminata! Score: ' + gameStats.score);
+        }
+        window.location.href = '../lobby/index.html';
+      })
+      .catch(error => {
+        console.error('🚨 Errore di rete:', error);
+        alert('Errore nel salvare i dati. Score: ' + gameStats.score);
+        window.location.href = '../lobby/index.html';
+      });
+    }
+
+    // Sistema API di integrazione
+    async function saveGameRecord() {
+      if (!token) {
+        console.log('⚠️ No token, impossibile salvare record');
+        return;
+      }
+      
+      try {
+        const response = await fetch('../user/src/index.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'add_record',
+            token: token,
+            score: gameStats.score,
+            kills: gameStats.kills,
+            deaths: gameStats.deaths,
+            time_played: gameStats.timeElapsed
+          })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          console.log('✅ Record salvato con successo');
+          updateGameUI();
+        } else {
+          console.error('❌ Errore salvataggio record:', data.message);
+        }
+      } catch (error) {
+        console.error('❌ Errore connessione API:', error);
+      }
+    }
+    
+    async function joinMultiplayerMatch(matchId) {
+      if (!token) return false;
+      
+      try {
+        const response = await fetch('../user/src/index.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'join_match',
+            token: token,
+            match_id: matchId
+          })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          console.log('✅ Unito alla partita multiplayer');
+          return true;
+        }
+      } catch (error) {
+        console.error('❌ Errore join match:', error);
+      }
+      return false;
+    }
+
+    // Sistema nemici e ostacoli
+    let enemies = [];
+    let obstacles = [];
+    let bullets = [];
+    let enemyTypes = [];
+    let obstacleTypes = [];
+    let enemyImages = {};
+    let obstacleImages = {};
+
+    // Carica immagini nemici e ostacoli
+    function loadGameImages() {
+        return new Promise((resolve) => {
+            const imagesToLoad = [
+                // Immagini nemici
+                { type: 'enemy', name: 'soldato', src: '/assets/enemies/soldato.jpg' },
+                { type: 'enemy', name: 'mitragliatrice', src: '/assets/enemies/postazione-mitragliatrice.png' },
+                { type: 'enemy', name: 'artiglieria_pesante', src: '/assets/enemies/artiglieria_pesante.jpg' },
+                
+                // Immagini ostacoli
+                { type: 'obstacle', name: 'casa', src: '/assets/obstacles/casa.jpg' },
+                { type: 'obstacle', name: 'muro', src: '/assets/obstacles/muro.jpg' },
+                { type: 'obstacle', name: 'albero', src: '/assets/obstacles/albero.jpg' },
+                { type: 'obstacle', name: 'roccia', src: '/assets/obstacles/roccia.jpg' }
+            ];
+            
+            let loadedCount = 0;
+            const totalImages = imagesToLoad.length;
+            console.log(`→ Iniziando caricamento di ${totalImages} immagini...`);
+            
+            imagesToLoad.forEach(imageData => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedCount++;
+                    console.log(`→ Caricata immagine ${loadedCount}/${totalImages}: ${imageData.name}`);
+                    if (loadedCount === totalImages) {
+                        console.log('→ Tutte le immagini di gioco caricate con successo');
+                        resolve();
+                    }
+                };
+                img.onerror = () => {
+                    console.warn(`→ Errore caricamento immagine: ${imageData.src}`);
+                    loadedCount++;
+                    if (loadedCount === totalImages) {
+                        console.log('→ Caricamento immagini completato (con errori)');
+                        resolve();
+                    }
+                };
+                img.src = imageData.src;
+                
+                if (imageData.type === 'enemy') {
+                    enemyImages[imageData.name] = img;
+                } else {
+                    obstacleImages[imageData.name] = img;
+                }
+            });
+        });
+    }
+
+    // Carica dati nemici e ostacoli
+    async function loadGameData() {
+        try {
+            // Prima carica le immagini
+            await loadGameImages();
+            
+            // Aspetta il caricamento dell'immagine del tank
+            await waitForTankImage();
+            
+            // Carica tipi di nemici
+            const enemiesResponse = await fetch('../user/src/tank-customization.php/enemies/types');
+            const enemiesData = await enemiesResponse.json();
+            if (enemiesData.success) {
+                enemyTypes = enemiesData.enemies;
+                console.log('→ Tipi nemici caricati:', enemyTypes.length);
+            }
+
+            // Carica tipi di ostacoli
+            const obstaclesResponse = await fetch('../user/src/tank-customization.php/map-obstacles/types');
+            const obstaclesData = await obstaclesResponse.json();
+            if (obstaclesData.success) {
+                obstacleTypes = obstaclesData.obstacles;
+                console.log('→ Tipi ostacoli caricati:', obstacleTypes.length);
+            }
+
+            // Genera nemici e ostacoli sulla mappa
+            generateEnemies();
+            generateObstacles();
+            
+            console.log(`→ Generati ${enemies.length} nemici e ${obstacles.length} ostacoli`);
+        } catch (error) {
+            console.error('Errore caricamento dati gioco:', error);
+            // Genera comunque nemici di base se fallisce il caricamento
+            generateBasicEnemies();
+            generateBasicObstacles();
+            console.log(`→ Generati nemici/ostacoli di base: ${enemies.length} nemici, ${obstacles.length} ostacoli`);
+        }
+    }
+    
+    // Aspetta il caricamento dell'immagine del tank
+    function waitForTankImage() {
+        return new Promise((resolve) => {
+            if (tankImg.complete) {
+                console.log('→ Immagine tank già caricata');
+                resolve();
+                return;
+            }
+            
+            const originalOnload = tankImg.onload;
+            tankImg.onload = function() {
+                console.log('→ Immagine tank caricata durante l\'attesa');
+                if (originalOnload) originalOnload.call(this);
+                resolve();
+            };
+            
+            const originalOnerror = tankImg.onerror;
+            tankImg.onerror = function() {
+                console.warn('→ Errore caricamento tank, continuando comunque');
+                if (originalOnerror) originalOnerror.call(this);
+                resolve();
+            };
+        });
+    }
+
+    // Genera nemici casuali sulla mappa
+    function generateEnemies() {
+        enemies = [];
+        const enemyCount = 8 + Math.floor(Math.random() * 5); // 8-12 nemici
+
+        for (let i = 0; i < enemyCount; i++) {
+            const enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+            if (!enemyType) continue;
+
+            // Determina il tipo di sprite in base al tipo di nemico
+            let spriteKey = 'soldato'; // default
+            if (enemyType.type.includes('machinegun') || enemyType.type.includes('mitragliatrice')) {
+                spriteKey = 'mitragliatrice';
+            } else if (enemyType.type.includes('artillery') || enemyType.type.includes('artiglieria')) {
+                spriteKey = 'artiglieria_pesante';
+            }
+
+            const enemy = {
+                id: i,
+                type: enemyType.type,
+                name: enemyType.name,
+                x: Math.random() * 2000 - 1000, // Posizione casuale
+                y: Math.random() * 2000 - 1000,
+                width: 32,
+                height: 32,
+                health: enemyType.health,
+                maxHealth: enemyType.health,
+                damage: enemyType.damage,
+                range: enemyType.range_distance,
+                reloadTime: enemyType.reload_time,
+                canPenetrateCover: enemyType.can_penetrate_cover,
+                lastShot: 0,
+                isAlive: true,
+                targetingPlayer: false,
+                spriteKey: spriteKey,
+                sprite: enemyType.sprite_path
+            };
+
+            enemies.push(enemy);
+        }
+        console.log('→ Nemici generati:', enemies.length);
+    }
+    
+    // Genera nemici di base se il caricamento API fallisce
+    function generateBasicEnemies() {
+        enemies = [];
+        const basicEnemyTypes = [
+            { type: 'soldier', name: 'Soldato', health: 100, damage: 25, range: 200, reloadTime: 1000, spriteKey: 'soldato' },
+            { type: 'machinegun', name: 'Mitragliatrice', health: 150, damage: 15, range: 300, reloadTime: 500, spriteKey: 'mitragliatrice' },
+            { type: 'artillery', name: 'Artiglieria', health: 200, damage: 75, range: 400, reloadTime: 3000, spriteKey: 'artiglieria_pesante' }
+        ];
+        
+        const enemyCount = 8 + Math.floor(Math.random() * 5);
+        for (let i = 0; i < enemyCount; i++) {
+            const enemyType = basicEnemyTypes[Math.floor(Math.random() * basicEnemyTypes.length)];
+            
+            const enemy = {
+                id: i,
+                type: enemyType.type,
+                name: enemyType.name,
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                width: 32,
+                height: 32,
+                health: enemyType.health,
+                maxHealth: enemyType.health,
+                damage: enemyType.damage,
+                range: enemyType.range,
+                reloadTime: enemyType.reloadTime,
+                canPenetrateCover: false,
+                lastShot: 0,
+                isAlive: true,
+                targetingPlayer: false,
+                spriteKey: enemyType.spriteKey
+            };
+            
+            enemies.push(enemy);
+        }
+        console.log('→ Nemici di base generati:', enemies.length);
+    }
+
+    // Genera ostacoli casuali sulla mappa
+    function generateObstacles() {
+        obstacles = [];
+        const obstacleCount = 15 + Math.floor(Math.random() * 10); // 15-25 ostacoli
+
+        for (let i = 0; i < obstacleCount; i++) {
+            const obstacleType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+            if (!obstacleType) continue;
+
+            // Determina il tipo di sprite in base al tipo di ostacolo
+            let spriteKey = 'roccia'; // default
+            if (obstacleType.type.includes('house') || obstacleType.type.includes('casa')) {
+                spriteKey = 'casa';
+            } else if (obstacleType.type.includes('wall') || obstacleType.type.includes('muro')) {
+                spriteKey = 'muro';
+            } else if (obstacleType.type.includes('tree') || obstacleType.type.includes('albero')) {
+                spriteKey = 'albero';
+            }
+
+            const obstacle = {
+                id: i,
+                type: obstacleType.type,
+                name: obstacleType.name,
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                width: obstacleType.width || 32,
+                height: obstacleType.height || 32,
+                providesCover: obstacleType.provides_cover,
+                destructible: obstacleType.destructible,
+                health: obstacleType.health,
+                maxHealth: obstacleType.health,
+                isDestroyed: false,
+                spriteKey: spriteKey,
+                sprite: obstacleType.sprite_path
+            };
+
+            obstacles.push(obstacle);
+        }
+        console.log('→ Ostacoli generati:', obstacles.length);
+    }
+    
+    // Genera ostacoli di base se il caricamento API fallisce
+    function generateBasicObstacles() {
+        obstacles = [];
+        const basicObstacleTypes = [
+            { type: 'house', name: 'Casa', width: 48, height: 48, health: 200, destructible: true, spriteKey: 'casa' },
+            { type: 'wall', name: 'Muro', width: 32, height: 32, health: 150, destructible: true, spriteKey: 'muro' },
+            { type: 'tree', name: 'Albero', width: 24, height: 32, health: 100, destructible: true, spriteKey: 'albero' },
+            { type: 'rock', name: 'Roccia', width: 28, height: 28, health: 300, destructible: false, spriteKey: 'roccia' }
+        ];
+        
+        const obstacleCount = 15 + Math.floor(Math.random() * 10);
+        for (let i = 0; i < obstacleCount; i++) {
+            const obstacleType = basicObstacleTypes[Math.floor(Math.random() * basicObstacleTypes.length)];
+            
+            const obstacle = {
+                id: i,
+                type: obstacleType.type,
+                name: obstacleType.name,
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                width: obstacleType.width,
+                height: obstacleType.height,
+                providesCover: true,
+                destructible: obstacleType.destructible,
+                health: obstacleType.health,
+                maxHealth: obstacleType.health,
+                isDestroyed: false,
+                spriteKey: obstacleType.spriteKey
+            };
+            
+            obstacles.push(obstacle);
+        }
+        console.log('→ Ostacoli di base generati:', obstacles.length);
+    }
+
+    // Verifica se una posizione è coperta da ostacoli
+    function isPositionCovered(x, y, shooterX, shooterY, canPenetrateCover = false) {
+        if (canPenetrateCover) return false;
+
+        for (let obstacle of obstacles) {
+            if (obstacle.isDestroyed || !obstacle.providesCover) continue;
+
+            // Controllo intersezione linea di tiro con ostacolo
+            if (lineIntersectsRect(shooterX, shooterY, x, y, 
+                obstacle.x, obstacle.y, obstacle.width, obstacle.height)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Controlla intersezione linea-rettangolo
+    function lineIntersectsRect(x1, y1, x2, y2, rx, ry, rw, rh) {
+        // Algoritmo di intersezione linea-rettangolo semplificato
+        return (x1 >= rx && x1 <= rx + rw && y1 >= ry && y1 <= ry + rh) ||
+               (x2 >= rx && x2 <= rx + rw && y2 >= ry && y2 <= ry + rh);
+    }
+
+    // AI dei nemici
+    function updateEnemies() {
+        const currentTime = Date.now();
+
+        enemies.forEach(enemy => {
+            if (!enemy.isAlive) return;
+
+            // Calcola distanza dal player
+            const dx = tank.x - enemy.x;
+            const dy = tank.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Se il player è nel raggio di azione
+            if (distance <= enemy.range) {
+                // Controlla se può sparare (copertura)
+                const hasCover = isPositionCovered(tank.x, tank.y, enemy.x, enemy.y, enemy.canPenetrateCover);
+                
+                if (!hasCover && currentTime - enemy.lastShot >= enemy.reloadTime) {
+                    // Spara al player
+                    fireEnemyBullet(enemy);
+                    enemy.lastShot = currentTime;
+                    enemy.targetingPlayer = true;
+                }
+            } else {
+                enemy.targetingPlayer = false;
+            }
+        });
+    }
+
+    // Sparo nemico
+    function fireEnemyBullet(enemy) {
+        const dx = tank.x - enemy.x;
+        const dy = tank.y - enemy.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        const bullet = {
+            x: enemy.x,
+            y: enemy.y,
+            vx: (dx / distance) * 300, // Velocità proiettile
+            vy: (dy / distance) * 300,
+            damage: enemy.damage,
+            isEnemyBullet: true,
+            canPenetrateCover: enemy.canPenetrateCover,
+            lifetime: 2000 // 2 secondi
+        };
+        
+        bullets.push(bullet);
+        console.log(`→ ${enemy.name} spara al player! Danno: ${enemy.damage}`);
+    }
+
+    // Aggiorna proiettili
+    function updateBullets(deltaTime) {
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            const bullet = bullets[i];
+            
+            // Movimento proiettile
+            bullet.x += bullet.vx * deltaTime / 1000;
+            bullet.y += bullet.vy * deltaTime / 1000;
+            bullet.lifetime -= deltaTime;
+            
+            // Rimuovi se scaduto
+            if (bullet.lifetime <= 0) {
+                bullets.splice(i, 1);
+                continue;
+            }
+            
+            // Controllo collisioni
+            if (bullet.isEnemyBullet) {
+                // Proiettile nemico vs player
+                if (Math.abs(bullet.x - tank.x) < tank.width && 
+                    Math.abs(bullet.y - tank.y) < tank.height) {
+                    // Danno al player
+                    gameStats.deaths += 1;
+                    console.log(`→ Player colpito! Danni subiti: ${bullet.damage}`);
+                    bullets.splice(i, 1);
+                    updateGameUI();
+                    continue;
+                }
+                
+                // Proiettile vs ostacoli (se non penetrante)
+                if (!bullet.canPenetrateCover) {
+                    for (let obstacle of obstacles) {
+                        if (obstacle.isDestroyed) continue;
+                        if (bullet.x >= obstacle.x && bullet.x <= obstacle.x + obstacle.width &&
+                            bullet.y >= obstacle.y && bullet.y <= obstacle.y + obstacle.height) {
+                            // Colpisce ostacolo
+                            if (obstacle.destructible) {
+                                obstacle.health -= bullet.damage;
+                                if (obstacle.health <= 0) {
+                                    obstacle.isDestroyed = true;
+                                    console.log(`→ ${obstacle.name} distrutto!`);
+                                }
+                            }
+                            bullets.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Proiettile player vs nemici
+                for (let enemy of enemies) {
+                    if (!enemy.isAlive) continue;
+                    if (Math.abs(bullet.x - enemy.x) < enemy.width && 
+                        Math.abs(bullet.y - enemy.y) < enemy.height) {
+                        // Danno al nemico
+                        enemy.health -= bullet.damage || 100;
+                        if (enemy.health <= 0) {
+                          enemy.isAlive = false;
+                          gameStats.kills += 1;
+                          gameStats.score += 50; // Punti per kill
+                          console.log(`→ ${enemy.name} eliminato! +50 punti`);
+                          updateGameUI();
+                        }
+                        bullets.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Disegna nemici
+    function drawEnemies() {
+        enemies.forEach(enemy => {
+            if (!enemy.isAlive) return;
+
+            // Usa l'immagine se disponibile, altrimenti rettangolo colorato
+            const image = enemyImages[enemy.spriteKey];
+            if (image && image.complete && image.width > 0) {
+                ctx.drawImage(image, enemy.x, enemy.y, enemy.width, enemy.height);
+            } else {
+                // Fallback: disegna rettangolo colorato
+                ctx.fillStyle = enemy.targetingPlayer ? '#ff4444' : '#ff8800';
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            }
+            
+            // Barra salute
+            if (enemy.health < enemy.maxHealth) {
+                const healthRatio = enemy.health / enemy.maxHealth;
+                ctx.fillStyle = 'red';
+                ctx.fillRect(enemy.x, enemy.y - 8, enemy.width, 4);
+                ctx.fillStyle = 'green';
+                ctx.fillRect(enemy.x, enemy.y - 8, enemy.width * healthRatio, 4);
+            }
+            
+            // Indicatore di targeting
+            if (enemy.targetingPlayer) {
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(enemy.x + enemy.width/2, enemy.y + enemy.height/2);
+                ctx.lineTo(tank.x + tank.width/2, tank.y + tank.height/2);
+                ctx.stroke();
+            }
+        });
+    }
+
+    // Disegna ostacoli
+    function drawObstacles() {
+        obstacles.forEach(obstacle => {
+            if (obstacle.isDestroyed) return;
+
+            // Usa l'immagine se disponibile, altrimenti rettangolo colorato
+            const image = obstacleImages[obstacle.spriteKey];
+            if (image && image.complete && image.width > 0) {
+                ctx.drawImage(image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            } else {
+                // Fallback: disegna rettangolo colorato
+                let color = '#8B4513'; // Marrone default
+                if (obstacle.type === 'wall') color = '#696969';
+                if (obstacle.type === 'rock') color = '#708090';
+                if (obstacle.type === 'bunker') color = '#2F4F4F';
+                if (obstacle.type === 'tree') color = '#228B22';
+                if (obstacle.type === 'house') color = '#CD853F';
+
+                ctx.fillStyle = color;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+            
+            // Barra salute per oggetti distruttibili
+            if (obstacle.destructible && obstacle.health < obstacle.maxHealth) {
+                const healthRatio = obstacle.health / obstacle.maxHealth;
+                ctx.fillStyle = 'red';
+                ctx.fillRect(obstacle.x, obstacle.y - 6, obstacle.width, 3);
+                ctx.fillStyle = 'yellow';
+                ctx.fillRect(obstacle.x, obstacle.y - 6, obstacle.width * healthRatio, 3);
+            }
+        });
+    }
+
+    // Disegna proiettili
+    function drawBullets() {
+        bullets.forEach(bullet => {
+            ctx.fillStyle = bullet.isEnemyBullet ? '#ff4444' : '#ffff44';
+            ctx.fillRect(bullet.x - 2, bullet.y - 2, 4, 4);
+        });
+    }
+
+    // Game loop principale
+    function gameLoop() {
+        const currentTime = Date.now();
+        const deltaTime = currentTime - (gameLoop.lastTime || currentTime);
+        gameLoop.lastTime = currentTime;
+
+        // Aggiorna nemici
+        updateEnemies();
+        
+        // Aggiorna proiettili
+        updateBullets(deltaTime);
+        
+        // Ridisegna
+        draw();
+        
+        // Continua il loop
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Avvia il game loop quando tutto è caricato
+    async function initGame() {
+        await loadGameData(); // Carica nemici e ostacoli
+        
+        // Avvia il game loop
+        gameLoop();
+        console.log('→ Game loop avviato con nemici e ostacoli');
+    }
+
+  </script>
+</body>
+</html>

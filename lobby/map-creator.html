@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Creator - Tank Game</title>
+    <link rel="stylesheet" href="css/lobby-style.css">
+    <style>
+        .map-creator-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .creator-header {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .map-editor-panel {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+            height: 80vh;
+        }
+
+        .tools-panel {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .canvas-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .properties-panel {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .tool-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tool-section h3 {
+            margin: 0 0 15px 0;
+            color: #4ade80;
+            font-size: 1.1rem;
+        }
+
+        .biome-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .biome-btn {
+            padding: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .biome-btn:hover {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.2);
+        }
+
+        .biome-btn.selected {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.3);
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.4);
+        }
+
+        .terrain-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .terrain-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .terrain-btn:hover {
+            border-color: #f59e0b;
+            transform: scale(1.1);
+        }
+
+        .terrain-btn.selected {
+            border-color: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        .enemy-grid, .obstacle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .enemy-btn, .obstacle-btn {
+            aspect-ratio: 1;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .enemy-btn:hover, .obstacle-btn:hover {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.2);
+            transform: scale(1.05);
+        }
+
+        .enemy-btn.selected, .obstacle-btn.selected {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.3);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+        }
+
+        #mapCanvas {
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: #2d3748;
+            cursor: crosshair;
+            width: 100%;
+            height: 100%;
+            max-width: 800px;
+            max-height: 600px;
+        }
+
+        .map-info {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #d1d5db;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #4ade80;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+        }
+
+        .visibility-toggle {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .toggle-option {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-option.selected {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 222, 128, 0.3);
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3);
+        }
+
+        .btn-danger {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(74, 222, 128, 0.3);
+            border-top: 4px solid #4ade80;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .coordinates-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .zoom-btn {
+            width: 30px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="map-creator-container">
+        <!-- Header -->
+        <div class="creator-header">
+            <div>
+                <button onclick="goBack()" class="btn-secondary">← Torna alla Lobby</button>
+                <h1 style="margin: 0; color: #4ade80;">🗺️ Map Creator</h1>
+            </div>
+            <div class="action-buttons">
+                <button onclick="clearMap()" class="btn-danger">🗑️ Pulisci</button>
+                <button onclick="testMap()" class="btn-secondary">🎮 Test</button>
+                <button onclick="saveMap()" class="btn-primary">💾 Salva Mappa</button>
+            </div>
+        </div>
+
+        <!-- Main Editor -->
+        <div class="map-editor-panel">
+            <!-- Tools Panel -->
+            <div class="tools-panel">
+                <div class="tool-section">
+                    <h3>🌍 Bioma</h3>
+                    <div class="biome-selector">
+                        <div class="biome-btn selected" data-biome="forest" onclick="selectBiome('forest', this)">
+                            🌲 Foresta
+                        </div>
+                        <div class="biome-btn" data-biome="desert" onclick="selectBiome('desert', this)">
+                            🏜️ Deserto
+                        </div>
+                        <div class="biome-btn" data-biome="tundra" onclick="selectBiome('tundra', this)">
+                            ❄️ Tundra
+                        </div>
+                        <div class="biome-btn" data-biome="volcanic" onclick="selectBiome('volcanic', this)">
+                            🌋 Vulcano
+                        </div>
+                        <div class="biome-btn" data-biome="urban" onclick="selectBiome('urban', this)">
+                            🏙️ Urbano
+                        </div>
+                        <div class="biome-btn" data-biome="lunar" onclick="selectBiome('lunar', this)">
+                            🌙 Lunare
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>🎨 Terreno</h3>
+                    <div class="terrain-selector">
+                        <div class="terrain-btn selected" style="background: #228B22;" data-terrain="grass" onclick="selectTerrain('grass', this)" title="Erba"></div>
+                        <div class="terrain-btn" style="background: #8FBC8F;" data-terrain="light_grass" onclick="selectTerrain('light_grass', this)" title="Erba Chiara"></div>
+                        <div class="terrain-btn" style="background: #A0522D;" data-terrain="dirt" onclick="selectTerrain('dirt', this)" title="Terra"></div>
+                        <div class="terrain-btn" style="background: #F4A460;" data-terrain="sand" onclick="selectTerrain('sand', this)" title="Sabbia"></div>
+                        <div class="terrain-btn" style="background: #696969;" data-terrain="rock" onclick="selectTerrain('rock', this)" title="Roccia"></div>
+                        <div class="terrain-btn" style="background: #E0FFFF;" data-terrain="ice" onclick="selectTerrain('ice', this)" title="Ghiaccio"></div>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>👹 Nemici</h3>
+                    <div class="enemy-grid">
+                        <div class="enemy-btn" data-enemy="foot_soldier" onclick="selectEnemy('foot_soldier', this)" title="Soldato">
+                            🪖
+                        </div>
+                        <div class="enemy-btn" data-enemy="machine_gun_post" onclick="selectEnemy('machine_gun_post', this)" title="Mitragliatrice">
+                            🔫
+                        </div>
+                        <div class="enemy-btn" data-enemy="heavy_artillery" onclick="selectEnemy('heavy_artillery', this)" title="Artiglieria">
+                            💥
+                        </div>
+                        <div class="enemy-btn" data-enemy="sniper_post" onclick="selectEnemy('sniper_post', this)" title="Cecchino">
+                            🎯
+                        </div>
+                        <div class="enemy-btn" data-enemy="mortar" onclick="selectEnemy('mortar', this)" title="Mortaio">
+                            💣
+                        </div>
+                        <div class="enemy-btn" data-enemy="eraser" onclick="selectEnemy('eraser', this)" title="Gomma">
+                            🧹
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>🏠 Ostacoli</h3>
+                    <div class="obstacle-grid">
+                        <div class="obstacle-btn" data-obstacle="house" onclick="selectObstacle('house', this)" title="Casa">
+                            🏠
+                        </div>
+                        <div class="obstacle-btn" data-obstacle="wall" onclick="selectObstacle('wall', this)" title="Muro">
+                            🧱
+                        </div>
+                        <div class="obstacle-btn" data-obstacle="tree" onclick="selectObstacle('tree', this)" title="Albero">
+                            🌳
+                        </div>
+                        <div class="obstacle-btn" data-obstacle="rock" onclick="selectObstacle('rock', this)" title="Roccia">
+                            🪨
+                        </div>
+                        <div class="obstacle-btn" data-obstacle="bunker" onclick="selectObstacle('bunker', this)" title="Bunker">
+                            🏭
+                        </div>
+                        <div class="obstacle-btn" data-obstacle="eraser" onclick="selectObstacle('eraser', this)" title="Gomma">
+                            🧹
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Panel -->
+            <div class="canvas-panel">
+                <div class="coordinates-display" id="coordinates">X: 0, Y: 0</div>
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="zoomIn()">+</button>
+                    <button class="zoom-btn" onclick="zoomOut()">-</button>
+                    <button class="zoom-btn" onclick="resetZoom()">⌂</button>
+                </div>
+                <canvas id="mapCanvas" width="800" height="600"></canvas>
+            </div>
+
+            <!-- Properties Panel -->
+            <div class="properties-panel">
+                <div class="map-info">
+                    <h3 style="color: #4ade80; margin: 0 0 15px 0;">📋 Proprietà Mappa</h3>
+                    
+                    <div class="form-group">
+                        <label for="mapName">Nome Mappa:</label>
+                        <input type="text" id="mapName" placeholder="La mia mappa fantastica" maxlength="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mapDescription">Descrizione:</label>
+                        <textarea id="mapDescription" rows="3" placeholder="Descrivi la tua mappa..." maxlength="500"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="terrainType">Tipo Terreno:</label>
+                        <select id="terrainType">
+                            <option value="mixed">Misto</option>
+                            <option value="flat">Pianeggiante</option>
+                            <option value="hilly">Collinare</option>
+                            <option value="mountainous">Montuoso</option>
+                            <option value="urban">Urbano</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Visibilità:</label>
+                        <div class="visibility-toggle">
+                            <div class="toggle-option selected" data-visibility="private" onclick="selectVisibility('private', this)">
+                                🔒 Privata
+                            </div>
+                            <div class="toggle-option" data-visibility="public" onclick="selectVisibility('public', this)">
+                                🌍 Pubblica
+                            </div>
+                        </div>
+                        <small style="color: #9ca3af; margin-top: 5px; display: block;">
+                            Privata: solo tu puoi usarla<br>
+                            Pubblica: tutti possono usarla
+                        </small>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>📊 Statistiche</h3>
+                    <div style="font-size: 14px; color: #d1d5db;">
+                        <p>Nemici: <span id="enemyCount">0</span></p>
+                        <p>Ostacoli: <span id="obstacleCount">0</span></p>
+                        <p>Dimensioni: <span id="mapSize">800x600</span></p>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>🎮 Modalità</h3>
+                    <div class="form-group">
+                        <select id="gameMode">
+                            <option value="single_player">Single Player</option>
+                            <option value="multiplayer">Multiplayer</option>
+                            <option value="both">Entrambe</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Salvando la mappa...</h3>
+            <p>Attendere prego...</p>
+        </div>
+    </div>
+
+    <script src="js/map-creator.js"></script>
+</body>
+</html>

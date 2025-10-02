@@ -1,0 +1,369 @@
+body {
+    box-sizing: border-box;
+    background-color: black !important;
+    color: white !important;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    height: 1%;
+    width: 99%;
+    display: flex;
+    flex-direction: row;
+    align-items: end;
+    padding-top: 1%;
+    padding-left: 1%;
+}
+
+#modifica_account {
+    margin-left: 5%;
+}
+
+.amici {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    align-content: end;
+}
+
+.navbar {
+    border-color: white;
+    overflow: hidden;
+}
+
+/* Stile per gli elementi del menu */
+.menu {
+    list-style-type: none;
+    width: 13.75%;
+    margin-left: 70%;
+    padding: 0;
+    display: flex;
+    align-content: center;
+    justify-content: end;
+}
+
+.menu-item {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+}
+
+.menu-item img {
+    width: 25px;
+    height: 25px;
+    border-radius: 0;
+    align-self: center;
+    margin-right: 10px;
+}
+
+.menu-item p {
+    display: block;
+    color: white;
+    text-decoration: none;
+}
+
+.menu-item:hover{
+    text-decoration: none;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 30%;
+    min-width: 160px;
+    padding: 5px;
+    cursor: pointer;
+    border-color: white;
+    text-align: center;
+    list-style-type: none;
+}
+
+.dropdown:hover .dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10%;
+}
+
+.dropdown-menu a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    text-decoration: none;
+    color: white;
+}
+
+.dropdown-menu a li {
+    width: 100%;
+    margin: 0;
+    padding: 5% 0;
+    text-align: center;
+    border: solid 1px white;
+}
+
+.dropdown-menu a li:hover {
+    background-color: white;
+    color: black;
+    text-decoration: none;
+}
+
+a {
+    text-decoration: none;
+    color: white;
+}
+
+button:hover {
+    background-color: #9c9c9c;
+    text-decoration: underline;
+}
+
+.hero {
+    margin-top: 10%;
+    margin-left: 5%;
+}
+
+h1 {
+    color: white;
+}
+
+.user {
+    width: 10%;
+    object-fit: cover;
+}
+
+/* Stile per la sezione account */
+.account {
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    height: 19vh;
+    margin-bottom: 10%;
+}
+
+.account button {
+    padding: 16px 32px 16px 32px;
+    border-radius: 15px;
+    border: 0;
+    align-self: center;
+    margin-right: 5%;
+    cursor: pointer;
+}
+
+.account h1 {
+    margin-left: 2%;
+    align-self: center;
+}
+
+.livello {
+    display: flex;
+    align-content: center;
+}
+
+.livello p {
+    color: white;
+}
+
+.livello .numero {
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 32px;
+    width: 1%;
+}
+
+.livello div {
+    width: 100%;
+}
+
+.level-bar {
+    background-color: white;
+    width: 10%;
+    height: 15px;
+    margin-right: 2%;
+    margin-left: -95%;
+    border-radius: 10px;
+}
+
+.level-bar .bar {
+    background-color: red;
+    width: 98%;
+    height: 15px;
+    border-radius: 10px 0 0 10px;
+    margin: 0;
+}
+
+.level {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+h2 {
+    color: white;
+    margin-bottom: 5%;
+}
+
+.lista-carri,.lista-armi {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    color: black;
+}
+
+
+.carro {
+    display: flex;
+    flex-direction: column;
+    width: 10%;
+    border-radius: 25px;
+    background-color: white;
+    padding: 1%;
+    margin-right: 10%;
+}
+
+.carro p {
+    line-height: 10px;
+}
+
+.carro a {
+    display: none;
+    align-self: center;
+}
+
+a button {
+    padding: 4px 8px 4px 8px;
+    border-radius: 15px;
+    border: 0;
+    align-self: center;
+    margin-right: 5%;
+}
+
+.carro:hover a {
+    display: block;
+}
+.arma {
+    width: 20%;
+    background-color: white;
+    border-radius: 25px;
+    padding-bottom: 1%;
+    margin-right: 10%;
+}
+
+img {
+    width: 100%;
+    object-fit: cover;
+    border-radius: 25px 25px 0 0;
+}
+
+.arma p {
+    margin-left: 1%;
+}
+
+.lista-armi {
+    margin-bottom: 10%;
+}
+
+.partita {
+    position: absolute;
+    display: none;
+    background-color: black;
+    width: 70%;
+    align-self: center;
+    margin-top: 20vh;
+    height: 75%;
+    border: solid white 2px;
+}
+
+.partita p {
+    color: white;
+    text-align: center;
+    margin-top: 5%;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.modifica {
+position: absolute;
+    display: none;
+    background-color: black;
+    width: 70%;
+    align-self: center;
+    margin-top: 20vh;
+    height: 75%;
+    border: solid white 2px;    
+}
+
+.modifica-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: start;
+    padding-left: 33%;
+}
+
+.modifica-form form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 30%;
+    width: 100%;
+}
+
+.modifica-form form input {
+    width: 50%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: none;
+}
+
+.modifica-form form button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+table {
+    border: solid white 2px;
+    margin-left: 5%;
+    width: 90%;
+}
+
+td {
+    color: white;
+    text-align: center;
+}
+
+.close_icon {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
+#logout-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 20px;
+    transition: background-color 0.3s;
+}
+
+#logout-btn:hover {
+    background-color: #ff0000;
+}

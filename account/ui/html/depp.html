@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank Game - Account</title>
+    <link rel="stylesheet" href="../css/depp.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Barra di navigazione -->
+        <nav class="navbar">
+            <ul>
+                <li><a href="#"><i class="fas fa-home"></i> LOBBY</a></li>
+                <li class="active"><a href="#"><i class="fas fa-user"></i> ACCOUNT</a></li>
+                <li><a href="#"><i class="fas fa-store"></i> SHOP</a></li>
+                <li><a href="#"><i class="fas fa-map"></i> MAPPE</a></li>
+            </ul>
+        </nav>
+
+        <!-- Sezione amici (sidebar) -->
+        <aside class="friends-sidebar">
+            <div class="friends-header">
+                <h3>LISTA AMICI</h3>
+                <i class="fas fa-chevron-down dropdown-toggle"></i>
+            </div>
+            <ul class="friends-list">
+                <li>User1 <span class="online"></span></li>
+                <li>User2 <span class="online"></span></li>
+                <li>User3 <span class="offline"></span></li>
+                <li>User4 <span class="online"></span></li>
+                <li>User5 <span class="offline"></span></li>
+            </ul>
+        </aside>
+
+        <!-- Contenuto principale -->
+        <main class="main-content">
+            <!-- Sezione utente -->
+            <section class="user-section">
+                <div class="profile">
+                    <img src="../../images/Neuromancer.jpg" alt="Immagine profilo" class="profile-img">
+                    <div class="profile-info">
+                        <h2>CIAO, User123!</h2>
+                        <div class="profile-buttons">
+                            <button class="btn play-now"><i class="fas fa-play"></i> GIOCA ORA</button>
+                            <button class="btn join-game"><i class="fas fa-users"></i> UNISCITI AD UNA PARTITA</button>
+                            <button class="btn edit-profile"><i class="fas fa-edit"></i> MODIFICA PROFILO</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sezione tank corrente -->
+            <section class="current-tank">
+                <h2>IL TUO TANK</h2>
+                <div class="tank-card">
+                    <img src="../../images/carro_armato_1.png" alt="Tank corrente" class="tank-img">
+                    <div class="tank-stats">
+                        <h3>HEAVY TANK MK-IV</h3>
+                        <p><strong>HP:</strong> 2500/2500</p>
+                        <p><strong>DANNO:</strong> 300-450</p>
+                        <p><strong>GITTATA:</strong> 120m</p>
+                        <p><strong>VELOCITÀ:</strong> 35km/h</p>
+                    </div>
+                    <div class="player-level">
+                        <h3>LIVELLO 15</h3>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 65%;"></div>
+                        </div>
+                        <p>65% verso livello 16</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sezione carri posseduti -->
+            <section class="owned-items">
+                <h2>CARRI POSSEDUTI</h2>
+                <div class="carousel">
+                    <button class="carousel-btn prev"><i class="fas fa-chevron-left"></i></button>
+                    <div class="items-container">
+                        <div class="item-card">
+                            <img src="../../images/carro_armato_1.png" alt="Tank leggero">
+                            <h4>TANK LEGGERO</h4>
+                            <p>HP: 1500</p>
+                            <p>Danno: 200</p>
+                            <p>Velocità: 60km/h</p>
+                            <button class="btn equip-btn">Equipaggia</button>
+                        </div>
+                        <div class="item-card">
+                            <img src="../../images/carro_armato_1.png" alt="Tank medio">
+                            <h4>TANK MEDIO</h4>
+                            <p>HP: 2000</p>
+                            <p>Danno: 300</p>
+                            <p>Velocità: 45km/h</p>
+                            <button class="btn equip-btn">Equipaggia</button>
+                        </div>
+                        <div class="item-card">
+                            <img src="../../images/carro_armato_1.png" alt="Tank pesante">
+                            <h4>TANK PESANTE</h4>
+                            <p>HP: 3000</p>
+                            <p>Danno: 450</p>
+                            <p>Velocità: 30km/h</p>
+                            <button class="btn equip-btn">Equipaggia</button>
+                        </div>
+                        <div class="item-card">
+                            <img src="../../images/carro_armato_1.png" alt="Tank pesante">
+                            <h4>TANK PESANTE</h4>
+                            <p>HP: 3000</p>
+                            <p>Danno: 450</p>
+                            <p>Velocità: 30km/h</p>
+                            <button class="btn equip-btn">Equipaggia</button>
+                        </div>
+                        <div class="item-card">
+                            <img src="../../images/carro_armato_1.png" alt="Tank pesante">
+                            <h4>TANK PESANTE</h4>
+                            <p>HP: 3000</p>
+                            <p>Danno: 450</p>
+                            <p>Velocità: 30km/h</p>
+                            <button class="btn equip-btn">Equipaggia</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+
+            <!-- Sezione armi possedute -->
+            <section class="owned-items">
+                <h2>ARMI POSSEDUTE</h2>
+                <div class="carousel">
+                    <button class="carousel-btn prev"><i class="fas fa-chevron-left"></i></button>
+                    <div class="items-container">
+                        <div class="item-card">
+                            <img src="../../images/Mitragliatrice_leggera.jpg" alt="Cannone rapido">
+                            <h4>CANNONE RAPIDO</h4>
+                            <p>Danno: 150</p>
+                            <p>Gittata: 90m</p>
+                            <p>Cadenza: 120 RPM</p>
+                            <button class="btn equip-btn">Equipaggia</button>
+                        </div>
+                        <div class="item-card">
+                            <img src="../../images/Mitragliatrice_leggera.jpg" alt="Cannone pesante">
+                            <h4>CANNONE PESANTE</h4>
+                            <p>Danno: 400</p>
+                            <p>Gittata: 130m</p>
+                            <p>Cadenza: 30 RPM</p>
+                            <button class="btn equip-btn">Equipaggia</button>
+                        </div>
+                        <div class="item-card">
+                            <img src="../../images/Mitragliatrice_leggera.jpg" alt="Lanciarazzi">
+                            <h4>LANCIARAZZI</h4>
+                            <p>Danno: 250</p>
+                            <p>Gittata: 150m</p>
+                            <p>Cadenza: 45 RPM</p>
+                            <button class="btn equip-btn">Equipaggia</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+
+            <!-- Sezione mappe possedute -->
+            <section class="owned-items">
+                <h2>MAPPE POSSEDUTE</h2>
+                <div class="carousel">
+                    <button class="carousel-btn prev"><i class="fas fa-chevron-left"></i></button>
+                    <div class="items-container">
+                        <div class="item-card">
+                            <img src="https://via.placeholder.com/150" alt="Deserto">
+                            <h4>DESERTO</h4>
+                            <p>Dimensione: 2km²</p>
+                            <p>Difficoltà: Media</p>
+                        </div>
+                        <div class="item-card">
+                            <img src="https://via.placeholder.com/150" alt="Foresta">
+                            <h4>FORESTA</h4>
+                            <p>Dimensione: 1.5km²</p>
+                            <p>Difficoltà: Alta</p>
+                        </div>
+                        <div class="item-card">
+                            <img src="https://via.placeholder.com/150" alt="Città">
+                            <h4>CITTÀ</h4>
+                            <p>Dimensione: 1.8km²</p>
+                            <p>Difficoltà: Bassa</p>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="../js/deep.js"></script>
+</body>
+</html>
