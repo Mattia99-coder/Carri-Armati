@@ -1,0 +1,51 @@
+services:
+  # Database MySQL
+  db:
+    image: mysql:8.0
+    container_name: tank-game-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: tank-game
+      MYSQL_USER: game_user
+      MYSQL_PASSWORD: secret
+    ports:
+      - "13306:3306"
+    volumes:
+      - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    networks:
+      - tank-game-network
+    restart: unless-stopped
+
+  # Web Server Apache per servire i file statici e PHP
+  web:
+    image: php:8.1-apache
+    container_name: tank-game-web
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www/html
+      - ./apache-conf/ports.conf:/etc/apache2/ports.conf
+    depends_on:
+      - db
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 3306
+      DATABASE_USER: game_user
+      DATABASE_PASSWORD: secret
+    networks:
+      - tank-game-network
+    restart: unless-stopped
+    command: >
+      bash -c "
+      docker-php-ext-install pdo pdo_mysql &&
+      a2enmod rewrite &&
+      apache2-foreground
+      "
+
+volumes:
+  mysql_data:
+
+networks:
+  tank-game-network:
+    driver: bridge
